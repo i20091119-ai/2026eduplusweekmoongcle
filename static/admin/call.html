@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>호출 버튼</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* 대형 호출 버튼 뷰 — Q3 아케이드 버튼 대체 (설계명세서 6장: 노트북/스마트폰) */
+* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; }
+html,body { width:100%; height:100%; }
+body { display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:26px; background:#2b2b2b; color:#fff; user-select:none; }
+#btn {
+  width:min(70vw,70vh); height:min(70vw,70vh); border-radius:50%;
+  border:none; background:radial-gradient(circle at 35% 30%, #ff8a70, #F5573B 60%, #c33a22);
+  color:#fff; font-size:min(9vw,9vh); font-weight:900; cursor:pointer;
+  box-shadow:0 14px 0 #8f2716, 0 20px 40px rgba(0,0,0,.5);
+  animation:breathe 2.4s ease-in-out infinite;
+}
+#btn:active { transform:translateY(10px); box-shadow:0 4px 0 #8f2716; }
+#btn:disabled { filter:grayscale(.7); animation:none; }
+@keyframes breathe { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.25)} }
+#result { font-size:min(6vw,44px); font-weight:800; min-height:1.4em; text-align:center; }
+#queue { font-size:20px; color:#bbb; }
+</style>
+</head>
+<body>
+<button id="btn">호출<br>🔔</button>
+<div id="result"></div>
+<div id="queue">대기: -</div>
+<script>
+"use strict";
+const btn = document.getElementById("btn");
+const result = document.getElementById("result");
+btn.addEventListener("click", async () => {
+  btn.disabled = true;
+  try {
+    const j = await (await fetch("/api/call", { method:"POST" })).json();
+    result.textContent = j.ok
+      ? `✅ ${j.station} 자리 · No.${String(j.number).padStart(3,"0")} 호출!`
+      : "🪑 " + (j.reason || "대기 없음");
+  } catch(e) { result.textContent = "⚠ 서버 연결 확인"; }
+  setTimeout(() => { btn.disabled = false; }, 1500); // 연타 방지 (디바운싱)
+});
+async function poll(){
+  try {
+    const s = await (await fetch("/api/status")).json();
+    document.getElementById("queue").textContent =
+      "대기: " + (s.waiting.length ? s.waiting.map(w=>w.station).join(" → ") : "없음");
+  } catch(e){ document.getElementById("queue").textContent = "대기: 연결 끊김"; }
+}
+poll(); setInterval(poll, 2000);
+</script>
+</body>
+</html>

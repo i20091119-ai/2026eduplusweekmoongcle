@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>몬스터 짝맞추기</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
+html,body { width:100%; height:100%; overflow:hidden; }
+body { background:#FFF3E6; display:flex; flex-direction:column; align-items:center; }
+header { display:flex; gap:30px; align-items:center; padding:14px; font-size:24px; font-weight:800; color:#5a4a3a; }
+#board { flex:1; display:grid; grid-template-columns:repeat(4, 130px); grid-auto-rows:130px;
+  gap:14px; align-content:center; }
+.card { border:none; border-radius:16px; font-size:64px; cursor:pointer;
+  background:#F5573B; box-shadow:0 5px 0 #b33a24; color:transparent; transition:transform .15s; }
+.card.open { background:#fff; color:inherit; box-shadow:0 5px 0 #ddd; }
+.card.done { background:#c9f2cf; color:inherit; box-shadow:none; transform:scale(.94); cursor:default; }
+#overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none;
+  align-items:center; justify-content:center; flex-direction:column; gap:18px; color:#fff; }
+#overlay.show { display:flex; }
+#overlay h1 { font-size:54px; }
+#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;
+  border-radius:16px; background:#F5573B; color:#fff; cursor:pointer; }
+</style>
+</head>
+<body>
+<header><span>🧩 몬스터 짝맞추기</span><span id="moves">뒤집기 0회</span><span id="found">0 / 6쌍</span></header>
+<div id="board"></div>
+<div id="overlay"><h1 id="ov-title">🎉 성공!</h1><p id="ov-sub" style="font-size:26px"></p><button onclick="start()">다시 하기</button></div>
+<script>
+"use strict";
+const MONSTERS = ["🐙","🦄","🐸","🦊","🐳","🐤"];
+const board = document.getElementById("board");
+let first = null, lock = false, moves = 0, found = 0;
+
+function start(){
+  document.getElementById("overlay").classList.remove("show");
+  moves = 0; found = 0; first = null; lock = false;
+  update();
+  const deck = [...MONSTERS, ...MONSTERS].sort(() => Math.random() - .5);
+  board.innerHTML = "";
+  deck.forEach(m => {
+    const b = document.createElement("button");
+    b.className = "card"; b.textContent = m;
+    b.addEventListener("click", () => flip(b));
+    board.appendChild(b);
+  });
+}
+function update(){
+  document.getElementById("moves").textContent = `뒤집기 ${moves}회`;
+  document.getElementById("found").textContent = `${found} / ${MONSTERS.length}쌍`;
+}
+function flip(b){
+  if (lock || b.classList.contains("open") || b.classList.contains("done")) return;
+  b.classList.add("open");
+  if (!first){ first = b; return; }
+  moves++; update();
+  if (first.textContent === b.textContent){
+    first.classList.add("done"); b.classList.add("done");
+    first = null; found++; update();
+    if (found === MONSTERS.length){
+      document.getElementById("ov-sub").textContent = `뒤집기 ${moves}회 만에 모두 찾았어요!`;
+      setTimeout(() => document.getElementById("overlay").classList.add("show"), 400);
+    }
+  } else {
+    lock = true;
+    const a = first; first = null;
+    setTimeout(() => { a.classList.remove("open"); b.classList.remove("open"); lock = false; }, 700);
+  }
+}
+start();
+</script>
+</body>
+</html>

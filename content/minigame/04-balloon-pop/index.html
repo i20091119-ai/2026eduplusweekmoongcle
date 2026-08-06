@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>풍선 팡팡</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
+html,body { width:100%; height:100%; overflow:hidden; }
+body { background:linear-gradient(#cfe9ff, #eef7ff); }
+header { position:fixed; top:0; left:0; right:0; display:flex; gap:36px; justify-content:center;
+  padding:12px; font-size:26px; font-weight:800; color:#2a5a8a; z-index:5; }
+.balloon { position:absolute; border:none; background:transparent; cursor:pointer;
+  font-size:72px; line-height:1; filter:drop-shadow(0 4px 4px rgba(0,0,0,.15)); }
+.balloon.pop { animation:pop .18s forwards; }
+@keyframes pop { to { transform:scale(2); opacity:0; } }
+#overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; z-index:10;
+  align-items:center; justify-content:center; flex-direction:column; gap:18px; color:#fff; }
+#overlay.hide { display:none; }
+#overlay h1 { font-size:54px; }
+#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;
+  border-radius:16px; background:#F5573B; color:#fff; cursor:pointer; }
+</style>
+</head>
+<body>
+<header><span>🎈 풍선 팡팡</span><span id="time">40초</span><span id="score">0점</span></header>
+<div id="overlay"><h1 id="ov-title">풍선 팡팡</h1><p id="ov-sub" style="font-size:26px">떠오르는 풍선을 날아가기 전에 클릭!</p><button onclick="start()">시작!</button></div>
+<script>
+"use strict";
+const COLORS = ["🎈","🟠","🟣","🔵","🟢"].map((_, i) => i); // 색은 filter로
+const $ = id => document.getElementById(id);
+let score = 0, time = 40, playing = false, spawnTimer = null, tickTimer = null, raf = null;
+const balloons = new Set();
+
+function start(){
+  $("overlay").classList.add("hide");
+  document.querySelectorAll(".balloon").forEach(b => b.remove());
+  balloons.clear();
+  score = 0; time = 40; playing = true;
+  update();
+  tickTimer = setInterval(() => { time--; update(); if (time <= 0) end(); }, 1000);
+  spawn();
+  loop();
+}
+function update(){
+  $("time").textContent = `${time}초`;
+  $("score").textContent = `${score}점`;
+}
+function spawn(){
+  if (!playing) return;
+  const b = document.createElement("button");
+  b.className = "balloon";
+  b.textContent = "🎈";
+  b.style.filter = `hue-rotate(${Math.floor(Math.random()*300)}deg) drop-shadow(0 4px 4px rgba(0,0,0,.15))`;
+  b.dataset.y = String(window.innerHeight + 40);
+  b.dataset.v = String(1.2 + Math.random() * 1.8); // 상승 속도
+  b.style.left = Math.floor(30 + Math.random() * (window.innerWidth - 130)) + "px";
+  b.addEventListener("click", () => {
+    if (!playing || b.classList.contains("pop")) return;
+    score++; update();
+    b.classList.add("pop");
+    setTimeout(() => { b.remove(); balloons.delete(b); }, 180);
+  });
+  document.body.appendChild(b);
+  balloons.add(b);
+  spawnTimer = setTimeout(spawn, Math.max(350, 800 - score * 10));
+}
+function loop(){
+  if (!playing) return;
+  for (const b of balloons){
+    if (b.classList.contains("pop")) continue;
+    let y = parseFloat(b.dataset.y) - parseFloat(b.dataset.v);
+    b.dataset.y = String(y);
+    b.style.top = y + "px";
+    if (y < -90){ b.remove(); balloons.delete(b); } // 놓친 풍선
+  }
+  raf = requestAnimationFrame(loop);
+}
+function end(){
+  playing = false;
+  clearInterval(tickTimer); clearTimeout(spawnTimer); cancelAnimationFrame(raf);
+  $("ov-title").textContent = "⏰ 끝!";
+  $("ov-sub").textContent = `풍선 ${score}개를 터뜨렸어요!`;
+  document.querySelector("#overlay button").textContent = "다시 하기";
+  $("overlay").classList.remove("hide");
+}
+</script>
+</body>
+</html>

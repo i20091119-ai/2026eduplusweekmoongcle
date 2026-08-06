@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>뭉클 부스 관리</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root { --brand:#F5573B; }
+* { box-sizing:border-box; margin:0; padding:0; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; }
+body { background:#f6f2ec; color:#2b2b2b; padding:20px; }
+h1 { font-size:26px; margin-bottom:16px; }
+h2 { font-size:18px; margin-bottom:10px; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:960px; }
+.card { background:#fff; border-radius:14px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,.07); }
+.full { grid-column:1 / -1; }
+button { border:none; border-radius:10px; padding:12px 18px; font-size:16px; font-weight:700;
+  cursor:pointer; background:#eee; }
+button.primary { background:var(--brand); color:#fff; }
+button.warn { background:#444; color:#fff; }
+.stat { display:flex; gap:24px; flex-wrap:wrap; }
+.stat b { font-size:34px; color:var(--brand); display:block; }
+table { width:100%; border-collapse:collapse; margin-top:8px; }
+td, th { padding:8px 10px; border-bottom:1px solid #eee; text-align:left; font-size:15px; }
+.row { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+.err { color:#c0392b; font-weight:700; }
+.ok { color:#2e9e44; font-weight:700; }
+a.bigcall { display:inline-block; margin-top:8px; font-size:15px; }
+#log { font-size:13px; color:#777; margin-top:8px; max-height:120px; overflow:auto; }
+</style>
+</head>
+<body>
+<h1>🛠 뭉클 부스 관리 <small id="conn" style="font-size:14px;color:#999"></small></h1>
+<div class="grid">
+  <div class="card full">
+    <h2>호출</h2>
+    <div class="row">
+      <button class="primary" style="font-size:22px;padding:18px 40px" onclick="api('/api/call')">🔔 다음 손님 호출 (먼저 완료한 자리)</button>
+      <button onclick="api('/api/admin/call',{station:'A'})">A 강제 호출</button>
+      <button onclick="api('/api/admin/call',{station:'B'})">B 강제 호출</button>
+    </div>
+    <a class="bigcall" href="call.html" target="_blank">▶ 대형 호출 버튼 뷰 열기 (Q3 대체용 — 스마트폰/노트북 전체화면)</a>
+  </div>
+
+  <div class="card">
+    <h2>오늘 현황 (<span id="day">-</span>)</h2>
+    <div class="stat">
+      <div>참여<b id="st-part">0</b></div>
+      <div>호출 완료<b id="st-called">0</b></div>
+      <div>대기 중<b id="st-wait">0</b></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>콘텐츠 · 인쇄</h2>
+    <p>도안 <b id="st-dosan">0</b>개 · 코드 <b id="st-code">0</b>개 · 미니게임 <b id="st-game">0</b>개</p>
+    <p id="printer" class="ok">인쇄 정상</p>
+    <div class="row"><button onclick="refresh()">↻ 상태·콘텐츠 새로고침</button></div>
+  </div>
+
+  <div class="card full">
+    <h2>대기열</h2>
+    <table>
+      <thead><tr><th>자리</th><th>번호</th><th>도안</th><th>등록 시각</th><th></th></tr></thead>
+      <tbody id="qbody"><tr><td colspan="5">-</td></tr></tbody>
+    </table>
+    <div class="row">
+      <button class="warn" onclick="api('/api/admin/reset',{station:'A'})">A 초기화</button>
+      <button class="warn" onclick="api('/api/admin/reset',{station:'B'})">B 초기화</button>
+      <button class="warn" onclick="if(confirm('전체 대기열을 초기화할까요?'))api('/api/admin/reset',{})">전체 초기화</button>
+    </div>
+  </div>
+
+  <div class="card full">
+    <h2>일자별 참여 집계</h2>
+    <table><thead><tr><th>일자</th><th>참여</th></tr></thead><tbody id="pbody"></tbody></table>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+function log(m){ const el=$("log"); el.innerHTML = new Date().toLocaleTimeString()+" "+m+"<br>"+el.innerHTML; }
+
+async function api(path, body){
+  try{
+    const r = await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},
+      body: body!==undefined ? JSON.stringify(body) : undefined});
+    const j = await r.json().catch(()=>({}));
+    log(path+" → "+JSON.stringify(j));
+    refresh();
+  }catch(e){ log(path+" 실패: "+e); }
+}
+
+async function refresh(){
+  try{
+    const s = await (await fetch("/api/status")).json();
+    $("conn").textContent = "연결됨";
+    $("day").textContent = s.day;
+    $("st-part").textContent = s.today_participants;
+    $("st-called").textContent = s.today_called;
+    $("st-wait").textContent = s.waiting.length;
+    $("st-dosan").textContent = s.dosan_count;
+    $("st-code").textContent = s.code_count;
+    $("st-game").textContent = s.minigame_count;
+    const pr = $("printer");
+    if(s.print_error){ pr.textContent = "⚠ "+s.print_error; pr.className="err"; }
+    else { pr.textContent = "인쇄 정상"; pr.className="ok"; }
+    $("qbody").innerHTML = s.waiting.length
+      ? s.waiting.map(w=>`<tr><td><b>${w.station}</b></td><td>No.${String(w.number).padStart(3,"0")}</td>
+          <td>${w.dosan||""}</td><td>${w.created_at.slice(11)}</td>
+          <td><button onclick="api('/api/admin/call',{station:'${w.station}'})">호출</button></td></tr>`).join("")
+      : '<tr><td colspan="5" style="color:#999">대기 없음</td></tr>';
+    $("pbody").innerHTML = (s.per_day||[]).map(p=>`<tr><td>${p.day}</td><td>${p.total}</td></tr>`).join("");
+  }catch(e){ $("conn").textContent="연결 끊김"; }
+}
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>

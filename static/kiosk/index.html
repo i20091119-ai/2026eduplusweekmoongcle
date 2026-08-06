@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>뭉클 부스 키오스크</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="kiosk.css">
+</head>
+<body>
+<!-- 기준 해상도 1280×720 · 트랙볼 클릭 전용 · 클릭 타깃 2cm 이상 -->
+
+<!-- ① 어트랙트 -->
+<section id="screen-attract" class="screen">
+  <div class="attract-inner">
+    <div class="attract-logo">뭉클</div>
+    <h1>뭉클 몬스터즈와 함께하는<br>나만의 클리커 만들기</h1>
+    <button id="btn-start" class="btn-huge pulse">시작하기 ▶</button>
+    <p class="attract-hint">화면의 버튼을 트랙볼로 클릭하세요</p>
+  </div>
+</section>
+
+<!-- ② 뭉클 알아보기 (소개 슬라이드) -->
+<section id="screen-intro" class="screen hidden">
+  <header class="step-header">
+    <span class="step-badge">1단계</span> 뭉클 알아보기
+  </header>
+  <div class="intro-stage">
+    <img id="intro-img" alt="뭉클 소개">
+    <div id="intro-empty" class="intro-empty hidden">소개자료 준비 중이에요!</div>
+  </div>
+  <footer class="nav-row">
+    <button id="btn-intro-prev" class="btn-big">◀ 이전</button>
+    <span id="intro-dots" class="dots"></span>
+    <button id="btn-intro-next" class="btn-big">다음 ▶</button>
+    <button id="btn-to-code" class="btn-big btn-primary">코드 입력하러 가기 ✔</button>
+  </footer>
+</section>
+
+<!-- ③ 코드 입력 (숫자 키패드) -->
+<section id="screen-code" class="screen hidden">
+  <header class="step-header">
+    <span class="step-badge">2단계</span> 몬스터가 알려준 세자리 코드를 입력하세요
+  </header>
+  <div class="code-wrap">
+    <div id="code-display" class="code-display">
+      <span class="digit"></span><span class="digit"></span><span class="digit"></span>
+    </div>
+    <div id="keypad" class="keypad"></div>
+    <p id="code-msg" class="code-msg">스마트폰으로 몬스터에 접촉해 퀴즈를 풀면 코드를 받아요 📱</p>
+  </div>
+  <footer class="nav-row">
+    <button id="btn-code-back" class="btn-big">◀ 소개 다시 보기</button>
+  </footer>
+</section>
+
+<!-- ④ 도안 선택 -->
+<section id="screen-dosan" class="screen hidden">
+  <header class="step-header">
+    <span class="step-badge">3단계</span> <span id="dosan-greet">마음에 드는 도안을 고르세요</span>
+  </header>
+  <div id="dosan-grid" class="dosan-grid"></div>
+</section>
+
+<!-- ⑤ 인쇄 중 / 등록 완료 -->
+<section id="screen-printing" class="screen hidden">
+  <div class="center-box">
+    <div class="spinner"></div>
+    <h1>도안을 인쇄하고 있어요…</h1>
+  </div>
+</section>
+
+<!-- ⑥ 대기 (미니게임 · 소개) -->
+<section id="screen-wait" class="screen hidden">
+  <header class="wait-banner">
+    <span id="wait-number" class="wait-number">No. 000</span>
+    <span class="wait-text">🪑 자리에서 기다려 주세요 — <b>띵동!</b> 소리가 나면 도안을 들고 만들기존으로!</span>
+  </header>
+  <div class="wait-tabs">
+    <button id="tab-game" class="tab active">🎮 미니게임</button>
+    <button id="tab-intro" class="tab">📖 뭉클 이야기</button>
+  </div>
+  <div id="wait-game-menu" class="game-menu"></div>
+  <div id="wait-game-frame-wrap" class="game-frame-wrap hidden">
+    <button id="btn-game-exit" class="btn-big btn-exit">← 다른 게임 하기</button>
+    <iframe id="game-frame" title="미니게임"></iframe>
+  </div>
+  <div id="wait-intro" class="wait-intro hidden">
+    <img id="wait-intro-img" alt="뭉클 소개">
+    <div class="nav-row">
+      <button id="btn-wintro-prev" class="btn-big">◀</button>
+      <button id="btn-wintro-next" class="btn-big">▶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ⑦ 띵동 호출 (최우선 오버레이) -->
+<section id="screen-called" class="screen hidden called">
+  <div class="center-box">
+    <div class="bell">🔔</div>
+    <h1 class="called-title">띵동~!</h1>
+    <p class="called-sub"><span id="called-number">No. 000</span></p>
+    <h2>도안을 들고 <span class="accent">만들기존</span>으로 오세요!</h2>
+  </div>
+</section>
+
+<script src="kiosk.js"></script>
+</body>
+</html>

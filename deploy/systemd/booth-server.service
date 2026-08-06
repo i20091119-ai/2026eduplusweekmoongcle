@@ -1,0 +1,21 @@
+# 뭉클 부스 서버 (Q1 리눅스) — 부팅 시 자동 실행 · 정전 후 자동 복구
+# 설치:
+#   sudo cp deploy/systemd/booth-server.service /etc/systemd/system/
+#   sudo systemctl enable --now booth-server
+[Unit]
+Description=Moongcle booth server (FastAPI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# 배포 경로에 맞게 수정
+WorkingDirectory=/home/booth/2026eduplusweekmoongcle
+ExecStart=/usr/bin/python3 -m uvicorn server.app:app --host 0.0.0.0 --port 80
+Restart=always
+RestartSec=3
+Environment=BOOTH_PRINTER=booth
+# 리허설 시 인쇄 생략: Environment=BOOTH_PRINT_DRY_RUN=1
+
+[Install]
+WantedBy=multi-user.target

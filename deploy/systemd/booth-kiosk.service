@@ -1,0 +1,22 @@
+# 크로미움 키오스크 (Q1 · Q2) — 그래픽 세션에서 전체화면 자동 진입
+# STATION 값만 A/B로 바꿔 배포 (3대 동일 이미지 + 역할은 환경변수 원칙)
+# 설치 (사용자 세션 서비스):
+#   mkdir -p ~/.config/systemd/user
+#   cp deploy/systemd/booth-kiosk.service ~/.config/systemd/user/
+#   systemctl --user enable --now booth-kiosk
+[Unit]
+Description=Moongcle booth kiosk (Chromium)
+After=graphical-session.target
+
+[Service]
+Environment=STATION=A
+Environment=SERVER=http://192.168.0.11
+ExecStart=/bin/sh -c 'chromium --kiosk --noerrdialogs --disable-infobars \
+  --disable-session-crashed-bubble --autoplay-policy=no-user-gesture-required \
+  --check-for-update-interval=31536000 \
+  "$SERVER/kiosk/?station=$STATION"'
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target

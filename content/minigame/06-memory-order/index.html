@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>순서 기억하기</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
+html,body { width:100%; height:100%; overflow:hidden; }
+body { background:#2b2b3e; display:flex; flex-direction:column; align-items:center; color:#fff; }
+header { display:flex; gap:36px; padding:14px; font-size:26px; font-weight:800; }
+#msg { font-size:24px; font-weight:700; min-height:1.5em; color:#ffd97a; }
+#pads { flex:1; display:grid; grid-template-columns:repeat(2, 200px); grid-auto-rows:200px;
+  gap:22px; align-content:center; }
+.pad { border:none; border-radius:24px; font-size:96px; cursor:pointer; opacity:.45;
+  transition:opacity .12s, transform .12s; }
+.pad.lit { opacity:1; transform:scale(1.06); }
+.pad:nth-child(1){ background:#e74c3c; } .pad:nth-child(2){ background:#2ecc71; }
+.pad:nth-child(3){ background:#3498db; } .pad:nth-child(4){ background:#f1c40f; }
+#overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); display:flex;
+  align-items:center; justify-content:center; flex-direction:column; gap:18px; }
+#overlay.hide { display:none; }
+#overlay h1 { font-size:54px; }
+#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;
+  border-radius:16px; background:#F5573B; color:#fff; cursor:pointer; }
+</style>
+</head>
+<body>
+<header><span>🧠 순서 기억하기</span><span id="level">1단계</span></header>
+<div id="msg"></div>
+<div id="pads"></div>
+<div id="overlay"><h1 id="ov-title">순서 기억하기</h1><p id="ov-sub" style="font-size:26px">몬스터가 반짝인 순서 그대로 클릭하세요!</p><button onclick="start()">시작!</button></div>
+<script>
+"use strict";
+const MONSTERS = ["🐙","🦄","🐸","🐤"];
+const $ = id => document.getElementById(id);
+const pads = [];
+const padsEl = $("pads");
+MONSTERS.forEach((m, i) => {
+  const b = document.createElement("button");
+  b.className = "pad"; b.textContent = m;
+  b.addEventListener("click", () => press(i));
+  padsEl.appendChild(b); pads.push(b);
+});
+let seq = [], input = [], showing = false, level = 1;
+
+function start(){
+  $("overlay").classList.add("hide");
+  seq = []; level = 1;
+  next();
+}
+function next(){
+  input = [];
+  seq.push(Math.floor(Math.random() * 4));
+  $("level").textContent = `${level}단계`;
+  playSeq();
+}
+async function playSeq(){
+  showing = true;
+  $("msg").textContent = "잘 보세요… 👀";
+  await sleep(700);
+  for (const i of seq){
+    pads[i].classList.add("lit");
+    await sleep(Math.max(280, 550 - level * 25));
+    pads[i].classList.remove("lit");
+    await sleep(160);
+  }
+  showing = false;
+  $("msg").textContent = "따라서 클릭!";
+}
+function press(i){
+  if (showing) return;
+  flash(i);
+  input.push(i);
+  const idx = input.length - 1;
+  if (seq[idx] !== i){ return end(); }
+  if (input.length === seq.length){
+    level++;
+    $("msg").textContent = "🎉 통과!";
+    setTimeout(next, 900);
+  }
+}
+function flash(i){
+  pads[i].classList.add("lit");
+  setTimeout(() => pads[i].classList.remove("lit"), 200);
+}
+function end(){
+  $("ov-title").textContent = "💥 앗, 순서가 달라요!";
+  $("ov-sub").textContent = `${level - 1}단계까지 기억했어요!`;
+  document.querySelector("#overlay button").textContent = "다시 하기";
+  $("overlay").classList.remove("hide");
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+</script>
+</body>
+</html>
