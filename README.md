@@ -20,10 +20,23 @@ content/           콘텐츠 — 파일 교체만으로 반영, 코드 수정·�
   ├ quiz/          quiz.json — NFC 정답코드 5개 (세자리 고정)
   ├ intro/         뭉클 소개 이미지 (알아보기 + 대기 화면)
   └ minigame/      미니게임 6종 (폴더당 game.json + index.html)
-deploy/systemd/    부팅 자동 실행 유닛 (정전 자동 복구)
+arduino/           MCU 스케치 — quiz_led(Q1·Q2 LED 3종 연출) · button_caller(Q3 부저)
+bridge/            리눅스↔MCU 브리지 — led_bridge(WS이벤트→시리얼) · button_bridge(PRESS→/api/call)
+deploy/systemd/    부팅 자동 실행 유닛 (서버·키오스크·브리지 — 정전 자동 복구)
 scripts/           개발 실행 · 키오스크 실행 스크립트
 tools/             샘플 도안 생성기
+docs/              인쇄테스트 절차서 · 스태프 운영 매뉴얼
 ```
+
+## LED · 부저 연출 (MCU)
+
+| 보드 | 스케치 | 연출 |
+|---|---|---|
+| Q1·Q2 | `arduino/quiz_led` | 대기: 스테이션 색 은은한 순환 / 정답: 초록 플래시 / 호출: 색 웨이브 (A 주황·B 파랑) |
+| Q3 | `arduino/button_caller` | 버튼 LED 숨쉬기 점멸 · 눌림→호출 · 결과 피드백(초록/노랑/빨강) |
+
+브리지 실행: `pip install -r bridge/requirements.txt` 후 `STATION=A python3 bridge/led_bridge.py` /
+`python3 bridge/button_bridge.py` (운영은 systemd 유닛). 시리얼 포트는 `BOOTH_MCU_PORT`(기본 /dev/ttyACM0).
 
 ## 관람객 흐름 (부스 전체)
 

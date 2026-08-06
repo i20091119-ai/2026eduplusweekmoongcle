@@ -161,6 +161,7 @@ async def ws_endpoint(ws: WebSocket):
 
 class CodeIn(BaseModel):
     code: str
+    station: str | None = None  # LED 연출용 — 어느 좌석에서 정답이 났는지
 
 
 class CompleteIn(BaseModel):
@@ -187,11 +188,13 @@ def get_config():
 
 
 @app.post("/api/code/verify")
-def verify_code(body: CodeIn):
+async def verify_code(body: CodeIn):
     codes = load_codes()
     monster = codes.get(body.code.strip())
     if monster is None:
         return {"ok": False}
+    if body.station:  # LED 브리지가 초록 플래시로 반응
+        await hub.broadcast({"type": "correct", "station": body.station})
     return {"ok": True, "monster": monster}
 
 

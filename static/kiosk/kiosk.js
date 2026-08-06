@@ -135,7 +135,7 @@ async function verifyCode() {
     const r = await fetch("/api/code/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, station: STATION }),
     });
     const j = await r.json();
     if (j.ok) {

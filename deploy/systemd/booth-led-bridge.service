@@ -1,0 +1,21 @@
+# LED 브리지 (Q1 · Q2) — 서버 이벤트를 MCU LED 연출로 전달
+# STATION=A/B 만 바꿔 배포. 설치:
+#   sudo cp deploy/systemd/booth-led-bridge.service /etc/systemd/system/
+#   sudo systemctl enable --now booth-led-bridge
+[Unit]
+Description=Moongcle booth LED bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/booth/2026eduplusweekmoongcle
+ExecStart=/usr/bin/python3 bridge/led_bridge.py
+Restart=always
+RestartSec=3
+Environment=STATION=A
+Environment=BOOTH_SERVER=http://192.168.0.11
+Environment=BOOTH_MCU_PORT=/dev/ttyACM0
+
+[Install]
+WantedBy=multi-user.target

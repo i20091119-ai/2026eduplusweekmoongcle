@@ -1,0 +1,20 @@
+# 호출 버튼 브리지 (Q3) — 아케이드 버튼 → 서버 /api/call
+# 설치:
+#   sudo cp deploy/systemd/booth-button-bridge.service /etc/systemd/system/
+#   sudo systemctl enable --now booth-button-bridge
+[Unit]
+Description=Moongcle booth button bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/booth/2026eduplusweekmoongcle
+ExecStart=/usr/bin/python3 bridge/button_bridge.py
+Restart=always
+RestartSec=3
+Environment=BOOTH_SERVER=http://192.168.0.11
+Environment=BOOTH_MCU_PORT=/dev/ttyACM0
+
+[Install]
+WantedBy=multi-user.target
