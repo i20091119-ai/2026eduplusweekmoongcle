@@ -1,0 +1,16 @@
+{
+  "_설명": "음식 이상형 월드컵 — 후보 8개(8강). pdf는 content/dosan/ 기준 경로. 후보 교체는 파일 수정만으로.",
+  "title": "음식 이상형 월드컵",
+  "emoji": "🍕",
+  "desc": "8강 토너먼트로 최애 음식 뽑기",
+  "candidates": [
+    { "name": "피자",       "emoji": "🍕", "pdf": "음식/피자.pdf" },
+    { "name": "치킨",       "emoji": "🍗", "pdf": "음식/치킨.pdf" },
+    { "name": "떡볶이",     "emoji": "🌶", "pdf": "음식/떡볶이.pdf" },
+    { "name": "초밥",       "emoji": "🍣", "pdf": "음식/초밥.pdf" },
+    { "name": "햄버거",     "emoji": "🍔", "pdf": "음식/햄버거.pdf" },
+    { "name": "파스타",     "emoji": "🍝", "pdf": "음식/파스타.pdf" },
+    { "name": "김밥",       "emoji": "🍙", "pdf": "음식/김밥.pdf" },
+    { "name": "아이스크림", "emoji": "🍦", "pdf": "음식/아이스크림.pdf" }
+  ]
+}

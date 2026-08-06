@@ -1,0 +1,15 @@
+{
+  "_설명": "내 감정을 담은 이모티콘 — 오늘의 감정 선택. pdf는 content/dosan/ 기준 경로.",
+  "title": "내 감정을 담은 이모티콘",
+  "emoji": "😊",
+  "desc": "오늘의 내 기분을 도안으로",
+  "prompt": "지금 내 마음과 가장 가까운 감정은?",
+  "emotions": [
+    { "name": "기쁨",   "emoji": "😆", "pdf": "감정/기쁨.pdf" },
+    { "name": "설렘",   "emoji": "🤩", "pdf": "감정/설렘.pdf" },
+    { "name": "뿌듯",   "emoji": "😌", "pdf": "감정/뿌듯.pdf" },
+    { "name": "궁금",   "emoji": "🤔", "pdf": "감정/궁금.pdf" },
+    { "name": "씩씩",   "emoji": "😤", "pdf": "감정/씩씩.pdf" },
+    { "name": "평온",   "emoji": "😊", "pdf": "감정/평온.pdf" }
+  ]
+}

@@ -21,7 +21,7 @@ let code = "";
 let idleTimer = null;
 
 const $ = (id) => document.getElementById(id);
-const screens = ["attract", "intro", "code", "dosan", "printing", "wait", "called"];
+const screens = ["attract", "intro", "code", "maker", "printing", "wait", "called"];
 let current = "attract";
 
 function show(name) {
@@ -64,7 +64,9 @@ function dingDong(times = 3) {
 function clickBeep() { ensureAudio(); tone(1200, audioCtx.currentTime, 0.08, 0.15); }
 
 /* ── ① 어트랙트 ── */
-$("btn-start").addEventListener("click", () => { ensureAudio(); startIntro(); });
+// 브로슈어는 대기존에서 읽는 흐름이므로 시작 = 바로 코드 입력 (소개는 선택)
+$("btn-start").addEventListener("click", () => { ensureAudio(); startCode(); });
+$("btn-attract-intro").addEventListener("click", () => { ensureAudio(); startIntro(); });
 
 /* ── ② 뭉클 알아보기 ── */
 function startIntro() {
@@ -138,7 +140,7 @@ async function verifyCode() {
     const j = await r.json();
     if (j.ok) {
       setCodeMsg(`정답! ${j.monster} 몬스터를 만났군요 🎉`, "ok");
-      setTimeout(() => startDosan(j.monster), 900);
+      setTimeout(() => startMaker(), 900);
     } else {
       setCodeMsg("코드가 맞지 않아요 — 다시 확인해 주세요", "bad");
       const disp = $("code-display");
@@ -152,24 +154,159 @@ async function verifyCode() {
 }
 $("btn-code-back").addEventListener("click", startIntro);
 
-/* ── ④ 도안 선택 ── */
-async function startDosan(monster) {
-  const grid = $("dosan-grid");
-  grid.innerHTML = "";
-  $("dosan-greet").textContent = monster
-    ? `${monster}의 선물! 마음에 드는 도안을 고르세요`
-    : "마음에 드는 도안을 고르세요";
-  let list = [];
+/* ── ④ 도안 만들기 — 프로그램 3종 (성격검사 · 이상형 월드컵 · 감정 이모티콘) ── */
+let makerConf = {};
+
+function makerBody(...nodes) {
+  const body = $("maker-body");
+  body.innerHTML = "";
+  for (const n of nodes) body.appendChild(n);
+  return body;
+}
+function el(tag, cls, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html !== undefined) e.innerHTML = html;
+  return e;
+}
+function bigChoice(emoji, label, sub, onclick) {
+  const b = document.createElement("button");
+  b.innerHTML = (emoji ? `<span class="c-emoji">${emoji}</span>` : "") +
+    `<span>${label}</span>` + (sub ? `<span class="m-desc">${sub}</span>` : "");
+  b.addEventListener("click", () => { clickBeep(); onclick(); });
+  return b;
+}
+
+async function startMaker() {
   try {
-    const r = await fetch("/api/dosan");
-    list = (await r.json()).dosan;
-  } catch (e) { /* 아래 빈 목록 처리 */ }
+    makerConf = (await (await fetch("/api/maker")).json()).maker || {};
+  } catch (e) { makerConf = {}; }
+  $("maker-title").textContent = "나만의 도안 만들기 — 방법을 고르세요";
+  const menu = el("div", "maker-menu");
+  const programs = [
+    ["personality", () => runPersonality(makerConf.personality)],
+    ["worldcup",    () => runWorldcup(makerConf.worldcup)],
+    ["emotion",     () => runEmotion(makerConf.emotion)],
+  ];
+  let any = false;
+  for (const [key, run] of programs) {
+    const conf = makerConf[key];
+    if (!conf) continue;
+    any = true;
+    const b = document.createElement("button");
+    b.innerHTML = `<span class="m-emoji">${conf.emoji || "🎨"}</span>` +
+      `<span>${conf.title}</span><span class="m-desc">${conf.desc || ""}</span>`;
+    b.addEventListener("click", () => { clickBeep(); run(); });
+    menu.appendChild(b);
+  }
+  if (!any) { startDosanGrid(); return; } // 설정 없으면 목록 선택으로 폴백
+  makerBody(menu);
+  show("maker");
+}
+
+/* 프로그램 1 — 성격검사 */
+function runPersonality(conf) {
+  $("maker-title").textContent = conf.title;
+  const scores = {};
+  let qi = 0;
+  function ask() {
+    const q = conf.questions[qi];
+    const prog = el("div", "maker-progress", `${qi + 1} / ${conf.questions.length}`);
+    const question = el("div", "maker-q", q.q);
+    const choices = el("div", "maker-choices");
+    for (const a of q.a) {
+      choices.appendChild(bigChoice("", a.t, "", () => {
+        for (const [name, pt] of Object.entries(a.s || {}))
+          scores[name] = (scores[name] || 0) + pt;
+        qi++;
+        if (qi < conf.questions.length) ask();
+        else finish();
+      }));
+    }
+    makerBody(prog, question, choices);
+  }
+  function finish() {
+    let best = null;
+    for (const [name, pt] of Object.entries(scores))
+      if (!best || pt > scores[best]) best = name;
+    const r = conf.results[best] || {};
+    showMakerResult(r.emoji || "🐾", best, r.line || "", r.pdf);
+  }
+  ask();
+  show("maker");
+}
+
+/* 프로그램 2 — 음식 이상형 월드컵 */
+function runWorldcup(conf) {
+  $("maker-title").textContent = conf.title;
+  let round = [...conf.candidates].sort(() => Math.random() - .5);
+  let next = [], mi = 0;
+  const roundName = n => n === 2 ? "결승" : `${n}강`;
+  function match() {
+    const a = round[mi], b = round[mi + 1];
+    const prog = el("div", "maker-progress",
+      `${roundName(round.length)} · ${mi / 2 + 1} / ${round.length / 2}`);
+    const question = el("div", "maker-q", "더 좋아하는 쪽을 클릭!");
+    const choices = el("div", "maker-choices");
+    choices.appendChild(bigChoice(a.emoji, a.name, "", () => pick(a)));
+    choices.appendChild(el("span", "vs-badge", "VS"));
+    choices.appendChild(bigChoice(b.emoji, b.name, "", () => pick(b)));
+    makerBody(prog, question, choices);
+  }
+  function pick(winner) {
+    next.push(winner);
+    mi += 2;
+    if (mi >= round.length) {
+      if (next.length === 1)
+        return showMakerResult(next[0].emoji, next[0].name, "나의 최애 음식 우승!", next[0].pdf);
+      round = next; next = []; mi = 0;
+    }
+    match();
+  }
+  match();
+  show("maker");
+}
+
+/* 프로그램 3 — 감정 이모티콘 */
+function runEmotion(conf) {
+  $("maker-title").textContent = conf.title;
+  const question = el("div", "maker-q", conf.prompt || "지금 내 기분은?");
+  const choices = el("div", "maker-choices");
+  for (const emo of conf.emotions)
+    choices.appendChild(bigChoice(emo.emoji, emo.name, "", () =>
+      showMakerResult(emo.emoji, emo.name, "오늘의 내 감정 이모티콘!", emo.pdf)));
+  makerBody(question, choices);
+  show("maker");
+}
+
+/* 결과 화면 → 인쇄 확정 */
+function showMakerResult(emoji, name, line, pdf) {
+  $("maker-title").textContent = "결과가 나왔어요!";
+  const box = el("div", "maker-choices");
+  box.appendChild(bigChoice("🖨", "이 도안으로 인쇄하기", "", () => {
+    if (pdf) complete(pdf);
+    else startDosanGrid(); // 결과에 도안이 연결 안 된 경우 폴백
+  }));
+  box.appendChild(bigChoice("↩", "다른 방법으로 만들기", "", startMaker));
+  makerBody(
+    el("div", "maker-result-emoji", emoji),
+    el("div", "maker-result-name", name),
+    el("div", "maker-result-line", line),
+    box,
+  );
+}
+
+/* 폴백 — 전체 도안 목록에서 직접 선택 */
+async function startDosanGrid() {
+  $("maker-title").textContent = "마음에 드는 도안을 고르세요";
+  const grid = el("div", "dosan-grid");
+  let list = [];
+  try { list = (await (await fetch("/api/dosan")).json()).dosan; } catch (e) {}
   if (!list.length) {
-    grid.innerHTML = '<p style="font-size:30px;color:#999">도안 준비 중이에요 — 스태프를 불러 주세요</p>';
-    show("dosan");
+    makerBody(el("p", "", '<span style="font-size:30px;color:#999">도안 준비 중이에요 — 스태프를 불러 주세요</span>'));
+    show("maker");
     return;
   }
-  // 도안이 1개면 자동 사용 (설계명세서 3.4)
   if (list.length === 1) { complete(list[0].file); return; }
   for (const d of list) {
     const b = document.createElement("button");
@@ -177,7 +314,8 @@ async function startDosan(monster) {
     b.addEventListener("click", () => { clickBeep(); complete(d.file); });
     grid.appendChild(b);
   }
-  show("dosan");
+  makerBody(grid);
+  show("maker");
 }
 
 /* ── ⑤ 완료 → 인쇄 → 대기 등록 ── */

@@ -42,14 +42,44 @@ def load_codes() -> dict[str, str]:
 
 
 def list_dosan() -> list[dict]:
-    """content/dosan/*.pdf — 파일명 = 화면 버튼 라벨."""
+    """content/dosan/**/*.pdf — 파일명 = 화면 버튼 라벨, 하위 폴더 = 분류."""
     d = config.CONTENT_DIR / "dosan"
     if not d.exists():
         return []
     return [
-        {"file": p.name, "label": p.stem}
-        for p in sorted(d.glob("*.pdf"))
+        {
+            "file": str(p.relative_to(d)),
+            "label": p.stem,
+            "category": p.parent.name if p.parent != d else "",
+        }
+        for p in sorted(d.rglob("*.pdf"))
     ]
+
+
+def resolve_dosan(rel: str) -> Path | None:
+    """도안 상대경로를 안전하게 해석 — dosan 폴더 밖 접근 차단."""
+    d = (config.CONTENT_DIR / "dosan").resolve()
+    try:
+        p = (d / rel).resolve()
+    except Exception:
+        return None
+    if p.is_file() and p.suffix.lower() == ".pdf" and p.is_relative_to(d):
+        return p
+    return None
+
+
+def load_maker() -> dict:
+    """content/maker/*.json — 도안 만들기 프로그램 3종 설정."""
+    d = config.CONTENT_DIR / "maker"
+    out = {}
+    for name in ("personality", "worldcup", "emotion"):
+        f = d / f"{name}.json"
+        if f.exists():
+            try:
+                out[name] = json.loads(f.read_text(encoding="utf-8"))
+            except Exception as e:
+                log.error("%s.json 파싱 실패: %s", name, e)
+    return out
 
 
 def list_intro() -> list[str]:
@@ -170,6 +200,11 @@ def get_dosan():
     return {"dosan": list_dosan()}
 
 
+@app.get("/api/maker")
+def get_maker():
+    return {"maker": load_maker()}
+
+
 @app.get("/api/intro")
 def get_intro():
     return {"intro": [f"/content/intro/{n}" for n in list_intro()]}
@@ -185,8 +220,8 @@ async def complete(body: CompleteIn):
     """코드 확인 + 도안 선택 완료 → 번호 발급 · 스탬프 · 인쇄 · 대기열 등록."""
     if body.station not in config.STATIONS:
         raise HTTPException(400, "알 수 없는 스테이션")
-    src = config.CONTENT_DIR / "dosan" / body.dosan
-    if not src.exists() or src.suffix.lower() != ".pdf":
+    src = resolve_dosan(body.dosan)
+    if src is None:
         raise HTTPException(404, "도안 파일 없음")
 
     # 좌석 확인 후에 번호 발급 (중복 시도로 번호가 소모되지 않도록)

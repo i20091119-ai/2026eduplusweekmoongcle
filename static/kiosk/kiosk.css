@@ -66,13 +66,35 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
 .code-msg.ok { color: #2e9e44; font-weight: 800; }
 .code-msg.bad { color: var(--brand); font-weight: 800; }
 
-/* ④ 도안 선택 */
-.dosan-grid { flex: 1; display: flex; flex-wrap: wrap; gap: 26px;
-  align-items: center; justify-content: center; padding: 20px 60px 60px; }
-.dosan-grid button {
-  font-size: 34px; font-weight: 800; padding: 40px 46px; min-width: 260px; min-height: 140px;
-  border: 4px solid transparent;
-}
+/* ④ 도안 만들기 */
+.maker-body { flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 22px; padding: 10px 50px 30px; overflow: auto; }
+/* 내용이 넘칠 때도 클리핑 없이 세로 중앙 정렬 */
+.maker-body > :first-child { margin-top: auto; }
+.maker-body > :last-child { margin-bottom: auto; }
+.maker-menu { display: flex; gap: 26px; flex-wrap: wrap; justify-content: center; }
+.maker-menu button { width: 340px; min-height: 210px; font-size: 30px; font-weight: 800;
+  display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center;
+  border: 4px solid transparent; }
+.maker-menu button:hover { border-color: var(--brand); }
+.maker-menu .m-emoji { font-size: 64px; }
+.maker-menu .m-desc { font-size: 20px; font-weight: 500; color: #8a7a6a; }
+.maker-q { font-size: 38px; font-weight: 800; text-align: center; line-height: 1.4; max-width: 1000px; }
+.maker-progress { font-size: 22px; font-weight: 700; color: #a08a76; }
+.maker-choices { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
+.maker-choices button { min-width: 300px; max-width: 480px; min-height: 130px;
+  font-size: 30px; font-weight: 800; padding: 20px 30px;
+  display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center;
+  border: 4px solid transparent; }
+.maker-choices button:hover { border-color: var(--brand); }
+.maker-choices .c-emoji { font-size: 58px; }
+.vs-badge { font-size: 40px; font-weight: 900; color: var(--brand); align-self: center; }
+.maker-result-emoji { font-size: 120px; }
+.maker-result-name { font-size: 52px; font-weight: 900; color: var(--brand); }
+.maker-result-line { font-size: 26px; color: #7a6a5c; }
+.dosan-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+.dosan-grid button { font-size: 28px; font-weight: 800; padding: 26px 34px;
+  min-width: 220px; min-height: 110px; border: 4px solid transparent; }
 .dosan-grid button:hover { border-color: var(--brand); }
 
 /* ⑤ 인쇄 중 / ⑦ 호출 공용 */
