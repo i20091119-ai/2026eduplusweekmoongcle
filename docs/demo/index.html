@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>뭉클 부스 키오스크 데모</title>
+<meta name="viewport" content="width=1280">
+<style>
+/* 뭉클 부스 키오스크 — 기준 1280×720, 대형 글자·대형 버튼 (설계명세서 2.3) */
+:root {
+  --brand: #F5573B;
+  --brand-dark: #d9422a;
+  --ink: #2b2b2b;
+  --bg: #FFF8F0;
+  --card: #ffffff;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body {
+  font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  background: var(--bg); color: var(--ink);
+  cursor: default; /* 트랙볼 커서 표시 유지 */
+}
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.hidden { display: none !important; }
+
+/* 버튼 — 클릭 타깃 2cm 이상 */
+button {
+  font-family: inherit; border: none; border-radius: 18px;
+  cursor: pointer; color: var(--ink); background: var(--card);
+  box-shadow: 0 4px 0 rgba(0,0,0,.12);
+}
+button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12); }
+.btn-huge { font-size: 44px; font-weight: 800; padding: 28px 70px; background: var(--brand); color: #fff; }
+.btn-big  { font-size: 26px; font-weight: 700; padding: 18px 30px; min-width: 120px; min-height: 76px; }
+.btn-primary { background: var(--brand); color: #fff; }
+.pulse { animation: pulse 1.6s infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+
+/* ① 어트랙트 */
+#screen-attract { align-items: center; justify-content: center; text-align: center;
+  background: radial-gradient(circle at 50% 30%, #fff 0%, var(--bg) 70%); }
+.attract-logo { font-size: 90px; font-weight: 900; color: var(--brand); letter-spacing: 6px; }
+#screen-attract h1 { font-size: 46px; line-height: 1.35; margin: 24px 0 48px; }
+.attract-hint { margin-top: 28px; font-size: 22px; color: #888; }
+
+/* 공통 헤더/푸터 */
+.step-header { font-size: 34px; font-weight: 800; padding: 26px 40px; }
+.step-badge { background: var(--brand); color: #fff; border-radius: 12px;
+  padding: 6px 18px; font-size: 26px; margin-right: 14px; }
+.nav-row { display: flex; gap: 20px; align-items: center; justify-content: center; padding: 22px; }
+.dots { font-size: 26px; letter-spacing: 6px; color: var(--brand); min-width: 120px; text-align: center; }
+
+/* ② 소개 */
+.intro-stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 40px; }
+#intro-img { max-width: 100%; max-height: 100%; border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.15); background: #fff; }
+.intro-empty { font-size: 34px; color: #999; }
+
+/* ③ 코드 입력 */
+.code-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
+.code-display { display: flex; gap: 18px; }
+.code-display .digit {
+  width: 90px; height: 110px; background: #fff; border-radius: 16px;
+  border: 4px solid #e5d8cc; font-size: 64px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+}
+.code-display.error .digit { border-color: var(--brand); animation: shake .4s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-12px)} 75%{transform:translateX(12px)} }
+.keypad { display: grid; grid-template-columns: repeat(3, 110px); gap: 14px; }
+.keypad button { font-size: 40px; font-weight: 800; height: 86px; }
+.keypad .key-del { font-size: 30px; background: #f1e4d7; }
+.code-msg { font-size: 24px; color: #7a6a5c; min-height: 32px; }
+.code-msg.ok { color: #2e9e44; font-weight: 800; }
+.code-msg.bad { color: var(--brand); font-weight: 800; }
+
+/* ④ 도안 만들기 */
+.maker-body { flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 22px; padding: 10px 50px 30px; overflow: auto; }
+/* 내용이 넘칠 때도 클리핑 없이 세로 중앙 정렬 */
+.maker-body > :first-child { margin-top: auto; }
+.maker-body > :last-child { margin-bottom: auto; }
+.maker-menu { display: flex; gap: 26px; flex-wrap: wrap; justify-content: center; }
+.maker-menu button { width: 340px; min-height: 210px; font-size: 30px; font-weight: 800;
+  display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center;
+  border: 4px solid transparent; }
+.maker-menu button:hover { border-color: var(--brand); }
+.maker-menu .m-emoji { font-size: 64px; }
+.maker-menu .m-desc { font-size: 20px; font-weight: 500; color: #8a7a6a; }
+.maker-q { font-size: 38px; font-weight: 800; text-align: center; line-height: 1.4; max-width: 1000px; }
+.maker-progress { font-size: 22px; font-weight: 700; color: #a08a76; }
+.maker-choices { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
+.maker-choices button { min-width: 300px; max-width: 480px; min-height: 130px;
+  font-size: 30px; font-weight: 800; padding: 20px 30px;
+  display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center;
+  border: 4px solid transparent; }
+.maker-choices button:hover { border-color: var(--brand); }
+.maker-choices .c-emoji { font-size: 58px; }
+.vs-badge { font-size: 40px; font-weight: 900; color: var(--brand); align-self: center; }
+.maker-result-emoji { font-size: 120px; }
+.maker-result-name { font-size: 52px; font-weight: 900; color: var(--brand); }
+.maker-result-line { font-size: 26px; color: #7a6a5c; }
+.dosan-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+.dosan-grid button { font-size: 28px; font-weight: 800; padding: 26px 34px;
+  min-width: 220px; min-height: 110px; border: 4px solid transparent; }
+.dosan-grid button:hover { border-color: var(--brand); }
+
+/* ⑤ 인쇄 중 / ⑦ 호출 공용 */
+.center-box { flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center; gap: 22px; }
+.center-box h1 { font-size: 52px; }
+.spinner { width: 90px; height: 90px; border: 12px solid #eee;
+  border-top-color: var(--brand); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ⑥ 대기 */
+.wait-banner { display: flex; align-items: center; gap: 22px;
+  background: var(--brand); color: #fff; padding: 18px 30px; font-size: 26px; }
+.wait-number { background: #fff; color: var(--brand); font-weight: 900;
+  font-size: 32px; border-radius: 12px; padding: 8px 20px; }
+.wait-tabs { display: flex; gap: 14px; padding: 16px 30px 0; }
+.tab { font-size: 26px; font-weight: 700; padding: 16px 34px; background: #f1e4d7; }
+.tab.active { background: var(--card); box-shadow: 0 4px 0 var(--brand); }
+.game-menu { flex: 1; display: flex; flex-wrap: wrap; gap: 22px;
+  align-items: center; justify-content: center; padding: 20px 50px; overflow: auto; }
+.game-menu button {
+  width: 330px; min-height: 150px; font-size: 28px; font-weight: 800;
+  display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center;
+}
+.game-menu .g-emoji { font-size: 52px; }
+.game-menu .g-desc { font-size: 18px; font-weight: 500; color: #8a7a6a; }
+.game-frame-wrap { flex: 1; display: flex; flex-direction: column; padding: 12px 20px 20px; gap: 10px; }
+.btn-exit { align-self: flex-start; min-height: 60px; padding: 10px 24px; font-size: 22px; }
+#game-frame { flex: 1; width: 100%; border: none; border-radius: 16px; background: #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+.wait-intro { flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 10px; padding: 16px; }
+#wait-intro-img { max-height: 420px; max-width: 92%; border-radius: 14px; background: #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+
+/* ⑦ 호출 */
+.called { background: var(--brand); color: #fff; z-index: 50; }
+.called .accent { color: #ffe27a; }
+.called-title { font-size: 110px !important; }
+.called-sub { font-size: 40px; font-weight: 800; }
+.called h2 { font-size: 48px; }
+.bell { font-size: 120px; animation: ring .8s infinite; transform-origin: top center; }
+@keyframes ring { 0%,100%{transform:rotate(0)} 25%{transform:rotate(18deg)} 75%{transform:rotate(-18deg)} }
+
+
+/* 데모 조작부 — 실제 부스 화면에는 없음 */
+#demo-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
+  display: flex; gap: 12px; align-items: center; justify-content: center;
+  padding: 8px; background: rgba(43,43,43,.92); }
+#demo-bar .demo-chip { color: #ffd97a; font-size: 15px; }
+#demo-bar button { font-size: 16px; font-weight: 700; padding: 10px 20px;
+  border-radius: 10px; background: #F5573B; color: #fff; box-shadow: none; }
+.screen { bottom: 48px !important; }
+#screen-called.screen { bottom: 0 !important; }
+
+</style>
+</head>
+<body>
+<!-- 기준 해상도 1280×720 · 트랙볼 클릭 전용 · 클릭 타깃 2cm 이상 -->
+
+<!-- ① 어트랙트 -->
+<section id="screen-attract" class="screen">
+  <div class="attract-inner">
+    <div class="attract-logo">뭉클</div>
+    <h1>뭉클 몬스터즈와 함께하는<br>나만의 클리커 만들기</h1>
+    <button id="btn-start" class="btn-huge pulse">시작하기 ▶</button>
+    <p class="attract-hint">화면의 버튼을 트랙볼로 클릭하세요</p>
+    <button id="btn-attract-intro" class="btn-big" style="margin-top:14px">📖 뭉클 알아보기</button>
+  </div>
+</section>
+
+<!-- ② 뭉클 알아보기 (소개 슬라이드) -->
+<section id="screen-intro" class="screen hidden">
+  <header class="step-header">
+    <span class="step-badge">1단계</span> 뭉클 알아보기
+  </header>
+  <div class="intro-stage">
+    <img id="intro-img" alt="뭉클 소개">
+    <div id="intro-empty" class="intro-empty hidden">소개자료 준비 중이에요!</div>
+  </div>
+  <footer class="nav-row">
+    <button id="btn-intro-prev" class="btn-big">◀ 이전</button>
+    <span id="intro-dots" class="dots"></span>
+    <button id="btn-intro-next" class="btn-big">다음 ▶</button>
+    <button id="btn-to-code" class="btn-big btn-primary">코드 입력하러 가기 ✔</button>
+  </footer>
+</section>
+
+<!-- ③ 코드 입력 (숫자 키패드) -->
+<section id="screen-code" class="screen hidden">
+  <header class="step-header">
+    <span class="step-badge">2단계</span> 몬스터가 알려준 세자리 코드를 입력하세요
+  </header>
+  <div class="code-wrap">
+    <div id="code-display" class="code-display">
+      <span class="digit"></span><span class="digit"></span><span class="digit"></span>
+    </div>
+    <div id="keypad" class="keypad"></div>
+    <p id="code-msg" class="code-msg">스마트폰으로 몬스터에 접촉해 퀴즈를 풀면 코드를 받아요 📱</p>
+  </div>
+  <footer class="nav-row">
+    <button id="btn-code-back" class="btn-big">◀ 소개 다시 보기</button>
+  </footer>
+</section>
+
+<!-- ④ 도안 만들기 (프로그램 3종: 성격검사 · 이상형 월드컵 · 감정 이모티콘) -->
+<section id="screen-maker" class="screen hidden">
+  <header class="step-header">
+    <span class="step-badge">3단계</span> <span id="maker-title">나만의 도안 만들기</span>
+  </header>
+  <div id="maker-body" class="maker-body"></div>
+</section>
+
+<!-- ⑤ 인쇄 중 / 등록 완료 -->
+<section id="screen-printing" class="screen hidden">
+  <div class="center-box">
+    <div class="spinner"></div>
+    <h1>도안을 인쇄하고 있어요…</h1>
+  </div>
+</section>
+
+<!-- ⑥ 대기 (미니게임 · 소개) -->
+<section id="screen-wait" class="screen hidden">
+  <header class="wait-banner">
+    <span id="wait-number" class="wait-number">No. 000</span>
+    <span class="wait-text">🪑 자리에서 기다려 주세요 — <b>띵동!</b> 소리가 나면 도안을 들고 만들기존으로!</span>
+  </header>
+  <div class="wait-tabs">
+    <button id="tab-game" class="tab active">🎮 미니게임</button>
+    <button id="tab-intro" class="tab">📖 뭉클 이야기</button>
+  </div>
+  <div id="wait-game-menu" class="game-menu"></div>
+  <div id="wait-game-frame-wrap" class="game-frame-wrap hidden">
+    <button id="btn-game-exit" class="btn-big btn-exit">← 다른 게임 하기</button>
+    <iframe id="game-frame" title="미니게임"></iframe>
+  </div>
+  <div id="wait-intro" class="wait-intro hidden">
+    <img id="wait-intro-img" alt="뭉클 소개">
+    <div class="nav-row">
+      <button id="btn-wintro-prev" class="btn-big">◀</button>
+      <button id="btn-wintro-next" class="btn-big">▶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ⑦ 띵동 호출 (최우선 오버레이) -->
+<section id="screen-called" class="screen hidden called">
+  <div class="center-box">
+    <div class="bell">🔔</div>
+    <h1 class="called-title">띵동~!</h1>
+    <p class="called-sub"><span id="called-number">No. 000</span></p>
+    <h2>도안을 들고 <span class="accent">만들기존</span>으로 오세요!</h2>
+  </div>
+</section>
+
+<script>
+
+/* ═══ 데모 모킹 — 실제 서버 없이 동작 (부스 코드와 동일 UI) ═══ */
+const DEMO = {
+  codes: {"347": "불꽃몽", "582": "물방울몽", "915": "새싹몽", "264": "번개몽", "738": "별빛몽"},
+  maker: {"personality": {"_설명": "성격검사 프로그램 — 문항·결과를 파일 교체만으로 변경. s의 점수가 가장 높은 동물이 결과. results의 pdf는 content/dosan/ 기준 경로.", "title": "나와 어울리는 동물은?", "emoji": "🐾", "desc": "성격검사 6문항", "results": {"여우": {"emoji": "🦊", "pdf": "동물/여우.pdf", "line": "재치만점 아이디어 뱅크!"}, "강아지": {"emoji": "🐶", "pdf": "동물/강아지.pdf", "line": "에너지 가득 분위기 메이커!"}, "부엉이": {"emoji": "🦉", "pdf": "동물/부엉이.pdf", "line": "차분하게 깊이 생각하는 지혜파!"}, "펭귄": {"emoji": "🐧", "pdf": "동물/펭귄.pdf", "line": "묵묵히 내 길을 가는 뚝심파!"}}, "questions": [{"q": "쉬는 날의 나는?", "a": [{"t": "친구들과 밖에서 신나게!", "s": {"강아지": 2, "여우": 1}}, {"t": "집에서 조용히 내 시간", "s": {"부엉이": 2, "펭귄": 1}}]}, {"q": "새로운 것을 배울 때 나는?", "a": [{"t": "일단 해 보면서 익힌다", "s": {"강아지": 2, "펭귄": 1}}, {"t": "먼저 차근차근 알아본다", "s": {"부엉이": 2, "여우": 1}}]}, {"q": "친구가 고민을 말하면?", "a": [{"t": "번뜩이는 해결책을 제안!", "s": {"여우": 2, "부엉이": 1}}, {"t": "끝까지 들어주고 공감", "s": {"펭귄": 2, "강아지": 1}}]}, {"q": "만들기를 할 때 나는?", "a": [{"t": "떠오르는 대로 바로 시작", "s": {"강아지": 2, "여우": 1}}, {"t": "완성 모습을 그려 놓고 시작", "s": {"부엉이": 2, "펭귄": 1}}]}, {"q": "더 끌리는 말은?", "a": [{"t": "반짝반짝 새로운 생각", "s": {"여우": 2, "강아지": 1}}, {"t": "한결같은 꾸준함", "s": {"펭귄": 2, "부엉이": 1}}]}, {"q": "박람회에서 나는?", "a": [{"t": "재밌어 보이는 곳부터 돌진!", "s": {"강아지": 2, "여우": 1}}, {"t": "지도를 보고 코스를 정한다", "s": {"부엉이": 2, "펭귄": 1}}]}]}, "worldcup": {"_설명": "음식 이상형 월드컵 — 후보 8개(8강). pdf는 content/dosan/ 기준 경로. 후보 교체는 파일 수정만으로.", "title": "음식 이상형 월드컵", "emoji": "🍕", "desc": "8강 토너먼트로 최애 음식 뽑기", "candidates": [{"name": "피자", "emoji": "🍕", "pdf": "음식/피자.pdf"}, {"name": "치킨", "emoji": "🍗", "pdf": "음식/치킨.pdf"}, {"name": "떡볶이", "emoji": "🌶", "pdf": "음식/떡볶이.pdf"}, {"name": "초밥", "emoji": "🍣", "pdf": "음식/초밥.pdf"}, {"name": "햄버거", "emoji": "🍔", "pdf": "음식/햄버거.pdf"}, {"name": "파스타", "emoji": "🍝", "pdf": "음식/파스타.pdf"}, {"name": "김밥", "emoji": "🍙", "pdf": "음식/김밥.pdf"}, {"name": "아이스크림", "emoji": "🍦", "pdf": "음식/아이스크림.pdf"}]}, "emotion": {"_설명": "내 감정을 담은 이모티콘 — 오늘의 감정 선택. pdf는 content/dosan/ 기준 경로.", "title": "내 감정을 담은 이모티콘", "emoji": "😊", "desc": "오늘의 내 기분을 도안으로", "prompt": "지금 내 마음과 가장 가까운 감정은?", "emotions": [{"name": "기쁨", "emoji": "😆", "pdf": "감정/기쁨.pdf"}, {"name": "설렘", "emoji": "🤩", "pdf": "감정/설렘.pdf"}, {"name": "뿌듯", "emoji": "😌", "pdf": "감정/뿌듯.pdf"}, {"name": "궁금", "emoji": "🤔", "pdf": "감정/궁금.pdf"}, {"name": "씩씩", "emoji": "😤", "pdf": "감정/씩씩.pdf"}, {"name": "평온", "emoji": "😊", "pdf": "감정/평온.pdf"}]}},
+  intro: ["data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%221100%22%20height%3D%22620%22%20viewBox%3D%220%200%201100%20620%22%3E%0A%20%20%3Crect%20width%3D%221100%22%20height%3D%22620%22%20rx%3D%2224%22%20fill%3D%22%23FFF3E6%22/%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22180%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2288%22%20font-weight%3D%22900%22%20fill%3D%22%23F5573B%22%3E%EB%AD%89%ED%81%B4%3C/text%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22290%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2242%22%20font-weight%3D%22700%22%20fill%3D%22%232b2b2b%22%3E%EA%B5%90%EC%8B%A4%EC%9D%84%20%EB%AD%89%ED%81%B4%ED%95%98%EA%B2%8C%20%EB%A7%8C%EB%93%9C%EB%8A%94%20%EA%B5%90%EC%9C%A1%20%EC%BD%98%ED%85%90%EC%B8%A0%20%ED%8C%80%3C/text%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22400%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2230%22%20fill%3D%22%237a6a5c%22%3E%E2%80%BB%20%EC%8B%A4%EC%A0%9C%20%EC%86%8C%EA%B0%9C%EC%9E%90%EB%A3%8C%20%EC%9D%B4%EB%AF%B8%EC%A7%80%EB%A1%9C%20%EA%B5%90%EC%B2%B4%ED%95%B4%20%EC%A3%BC%EC%84%B8%EC%9A%94%20%28content/intro/%29%3C/text%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22500%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2260%22%3E%F0%9F%90%99%20%F0%9F%A6%84%20%F0%9F%90%B8%20%F0%9F%A6%8A%20%F0%9F%90%B3%3C/text%3E%0A%3C/svg%3E%0A", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%221100%22%20height%3D%22620%22%20viewBox%3D%220%200%201100%20620%22%3E%0A%20%20%3Crect%20width%3D%221100%22%20height%3D%22620%22%20rx%3D%2224%22%20fill%3D%22%23E8F6EF%22/%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22110%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2252%22%20font-weight%3D%22900%22%20fill%3D%22%232f5d47%22%3E%EB%B6%80%EC%8A%A4%20%EC%B2%B4%ED%97%98%20%EC%88%9C%EC%84%9C%3C/text%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22230%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2236%22%20fill%3D%22%232b2b2b%22%3E%E2%91%A0%20%EC%8A%A4%EB%A7%88%ED%8A%B8%ED%8F%B0%EC%9C%BC%EB%A1%9C%20%EB%AA%AC%EC%8A%A4%ED%84%B0%20%ED%80%B4%EC%A6%88%20%ED%92%80%EA%B3%A0%20%EC%BD%94%EB%93%9C%20%EB%B0%9B%EA%B8%B0%20%F0%9F%93%B1%3C/text%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22320%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2236%22%20fill%3D%22%232b2b2b%22%3E%E2%91%A1%20%EC%BD%94%EB%93%9C%20%EC%9E%85%EB%A0%A5%20%E2%86%92%20%EB%8F%84%EC%95%88%20%EA%B3%A0%EB%A5%B4%EB%A9%B4%20%EC%9E%90%EB%8F%99%20%EC%9D%B8%EC%87%84%20%F0%9F%96%A8%3C/text%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22410%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2236%22%20fill%3D%22%232b2b2b%22%3E%E2%91%A2%20%EB%9D%B5%EB%8F%99%21%20%ED%98%B8%EC%B6%9C%EB%90%98%EB%A9%B4%20%EB%A7%8C%EB%93%A4%EA%B8%B0%EC%A1%B4%EC%97%90%EC%84%9C%20%ED%81%B4%EB%A6%AC%EC%BB%A4%20%EA%BE%B8%EB%AF%B8%EA%B8%B0%20%E2%9C%82%EF%B8%8F%3C/text%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22500%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2236%22%20fill%3D%22%232b2b2b%22%3E%E2%91%A3%20%EA%B9%80%ED%86%A0%ED%8B%B0%20%EC%8B%AC%EC%82%AC%20%EB%B0%9B%EA%B3%A0%20%EA%B2%BD%ED%92%88%20%EB%A3%B0%EB%A0%9B%20%EB%8F%8C%EB%A6%AC%EA%B8%B0%20%F0%9F%8E%81%3C/text%3E%0A%3C/svg%3E%0A", "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%221100%22%20height%3D%22620%22%20viewBox%3D%220%200%201100%20620%22%3E%0A%20%20%3Crect%20width%3D%221100%22%20height%3D%22620%22%20rx%3D%2224%22%20fill%3D%22%23F3ECFF%22/%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22110%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2252%22%20font-weight%3D%22900%22%20fill%3D%22%235a3a8a%22%3E%EB%AD%89%ED%81%B4%20%EB%AA%AC%EC%8A%A4%ED%84%B0%EC%A6%88%EB%A5%BC%20%EC%B0%BE%EC%95%84%EB%B3%B4%EC%84%B8%EC%9A%94%21%3C/text%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22280%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%22110%22%3E%F0%9F%90%99%20%F0%9F%A6%84%20%F0%9F%90%B8%20%F0%9F%A6%8A%20%F0%9F%90%B3%3C/text%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22420%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2234%22%20fill%3D%22%232b2b2b%22%3E%EB%B6%80%EC%8A%A4%20%EA%B3%B3%EA%B3%B3%EC%97%90%20%EC%88%A8%EC%9D%80%205%EB%A7%88%EB%A6%AC%20%EB%AA%AC%EC%8A%A4%ED%84%B0%EC%97%90%20%EC%8A%A4%EB%A7%88%ED%8A%B8%ED%8F%B0%EC%9D%84%20%EB%8C%80%EB%A9%B4%3C/text%3E%0A%20%20%3Ctext%20x%3D%22550%22%20y%3D%22480%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-size%3D%2234%22%20fill%3D%22%232b2b2b%22%3E%EB%AA%AC%EC%8A%A4%ED%84%B0%EB%A7%88%EB%8B%A4%20%EB%8B%A4%EB%A5%B8%20%ED%80%B4%EC%A6%88%EA%B0%80%20%EB%82%98%EC%99%80%EC%9A%94%21%3C/text%3E%0A%3C/svg%3E%0A"],
+  dosan: [{"file": "감정/궁금.pdf", "label": "궁금", "category": "감정"}, {"file": "감정/기쁨.pdf", "label": "기쁨", "category": "감정"}, {"file": "감정/뿌듯.pdf", "label": "뿌듯", "category": "감정"}, {"file": "감정/설렘.pdf", "label": "설렘", "category": "감정"}, {"file": "감정/씩씩.pdf", "label": "씩씩", "category": "감정"}, {"file": "감정/평온.pdf", "label": "평온", "category": "감정"}, {"file": "동물/강아지.pdf", "label": "강아지", "category": "동물"}, {"file": "동물/부엉이.pdf", "label": "부엉이", "category": "동물"}, {"file": "동물/여우.pdf", "label": "여우", "category": "동물"}, {"file": "동물/펭귄.pdf", "label": "펭귄", "category": "동물"}, {"file": "음식/김밥.pdf", "label": "김밥", "category": "음식"}, {"file": "음식/떡볶이.pdf", "label": "떡볶이", "category": "음식"}, {"file": "음식/아이스크림.pdf", "label": "아이스크림", "category": "음식"}, {"file": "음식/초밥.pdf", "label": "초밥", "category": "음식"}, {"file": "음식/치킨.pdf", "label": "치킨", "category": "음식"}, {"file": "음식/파스타.pdf", "label": "파스타", "category": "음식"}, {"file": "음식/피자.pdf", "label": "피자", "category": "음식"}, {"file": "음식/햄버거.pdf", "label": "햄버거", "category": "음식"}],
+  games: [{"id": "01-monster-match", "title": "몬스터 짝맞추기", "emoji": "🧩", "desc": "같은 몬스터 카드 두 장을 찾아요", "url": "/content/minigame/01-monster-match/index.html"}, {"id": "02-monster-catch", "title": "몬스터 잡기", "emoji": "🔨", "desc": "튀어나오는 몬스터를 30초 안에 클릭!", "url": "/content/minigame/02-monster-catch/index.html"}, {"id": "03-ox-quiz", "title": "뭉클 O/X 퀴즈", "emoji": "❓", "desc": "뭉클을 얼마나 알게 됐나요?", "url": "/content/minigame/03-ox-quiz/index.html"}, {"id": "04-balloon-pop", "title": "풍선 팡팡", "emoji": "🎈", "desc": "날아가기 전에 풍선을 터뜨려요", "url": "/content/minigame/04-balloon-pop/index.html"}, {"id": "05-odd-one-out", "title": "다른 몬스터 찾기", "emoji": "🔍", "desc": "무리에 숨은 다른 몬스터 하나를 찾아요", "url": "/content/minigame/05-odd-one-out/index.html"}, {"id": "06-memory-order", "title": "순서 기억하기", "emoji": "🧠", "desc": "몬스터가 반짝인 순서를 따라 클릭!", "url": "/content/minigame/06-memory-order/index.html"}],
+  gameSrc: {"/content/minigame/01-monster-match/index.html": "<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n<title>몬스터 짝맞추기<\/title>\n<style>\n* { margin:0; padding:0; box-sizing:border-box; font-family:\"Pretendard\",\"Noto Sans KR\",\"Malgun Gothic\",sans-serif; user-select:none; }\nhtml,body { width:100%; height:100%; overflow:hidden; }\nbody { background:#FFF3E6; display:flex; flex-direction:column; align-items:center; }\nheader { display:flex; gap:30px; align-items:center; padding:14px; font-size:24px; font-weight:800; color:#5a4a3a; }\n#board { flex:1; display:grid; grid-template-columns:repeat(4, 130px); grid-auto-rows:130px;\n  gap:14px; align-content:center; }\n.card { border:none; border-radius:16px; font-size:64px; cursor:pointer;\n  background:#F5573B; box-shadow:0 5px 0 #b33a24; color:transparent; transition:transform .15s; }\n.card.open { background:#fff; color:inherit; box-shadow:0 5px 0 #ddd; }\n.card.done { background:#c9f2cf; color:inherit; box-shadow:none; transform:scale(.94); cursor:default; }\n#overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none;\n  align-items:center; justify-content:center; flex-direction:column; gap:18px; color:#fff; }\n#overlay.show { display:flex; }\n#overlay h1 { font-size:54px; }\n#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;\n  border-radius:16px; background:#F5573B; color:#fff; cursor:pointer; }\n<\/style>\n<\/head>\n<body>\n<header><span>🧩 몬스터 짝맞추기<\/span><span id=\"moves\">뒤집기 0회<\/span><span id=\"found\">0 / 6쌍<\/span><\/header>\n<div id=\"board\"><\/div>\n<div id=\"overlay\"><h1 id=\"ov-title\">🎉 성공!<\/h1><p id=\"ov-sub\" style=\"font-size:26px\"><\/p><button onclick=\"start()\">다시 하기<\/button><\/div>\n<script>\n\"use strict\";\nconst MONSTERS = [\"🐙\",\"🦄\",\"🐸\",\"🦊\",\"🐳\",\"🐤\"];\nconst board = document.getElementById(\"board\");\nlet first = null, lock = false, moves = 0, found = 0;\n\nfunction start(){\n  document.getElementById(\"overlay\").classList.remove(\"show\");\n  moves = 0; found = 0; first = null; lock = false;\n  update();\n  const deck = [...MONSTERS, ...MONSTERS].sort(() => Math.random() - .5);\n  board.innerHTML = \"\";\n  deck.forEach(m => {\n    const b = document.createElement(\"button\");\n    b.className = \"card\"; b.textContent = m;\n    b.addEventListener(\"click\", () => flip(b));\n    board.appendChild(b);\n  });\n}\nfunction update(){\n  document.getElementById(\"moves\").textContent = `뒤집기 ${moves}회`;\n  document.getElementById(\"found\").textContent = `${found} / ${MONSTERS.length}쌍`;\n}\nfunction flip(b){\n  if (lock || b.classList.contains(\"open\") || b.classList.contains(\"done\")) return;\n  b.classList.add(\"open\");\n  if (!first){ first = b; return; }\n  moves++; update();\n  if (first.textContent === b.textContent){\n    first.classList.add(\"done\"); b.classList.add(\"done\");\n    first = null; found++; update();\n    if (found === MONSTERS.length){\n      document.getElementById(\"ov-sub\").textContent = `뒤집기 ${moves}회 만에 모두 찾았어요!`;\n      setTimeout(() => document.getElementById(\"overlay\").classList.add(\"show\"), 400);\n    }\n  } else {\n    lock = true;\n    const a = first; first = null;\n    setTimeout(() => { a.classList.remove(\"open\"); b.classList.remove(\"open\"); lock = false; }, 700);\n  }\n}\nstart();\n<\/script>\n<\/body>\n<\/html>\n", "/content/minigame/02-monster-catch/index.html": "<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n<title>몬스터 잡기<\/title>\n<style>\n* { margin:0; padding:0; box-sizing:border-box; font-family:\"Pretendard\",\"Noto Sans KR\",\"Malgun Gothic\",sans-serif; user-select:none; }\nhtml,body { width:100%; height:100%; overflow:hidden; }\nbody { background:#E8F6EF; display:flex; flex-direction:column; align-items:center; }\nheader { display:flex; gap:36px; padding:14px; font-size:26px; font-weight:800; color:#2f5d47; }\n#grid { flex:1; display:grid; grid-template-columns:repeat(3, 160px); grid-auto-rows:160px;\n  gap:22px; align-content:center; }\n.hole { border:none; border-radius:50%; background:#bfe3d0; box-shadow:inset 0 8px 14px rgba(0,0,0,.18);\n  font-size:84px; cursor:pointer; color:transparent; transition:background .1s; }\n.hole.up { color:inherit; background:#fff; }\n.hole.bonk { background:#ffd9d0; }\n#overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex;\n  align-items:center; justify-content:center; flex-direction:column; gap:18px; color:#fff; }\n#overlay.hide { display:none; }\n#overlay h1 { font-size:54px; }\n#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;\n  border-radius:16px; background:#F5573B; color:#fff; cursor:pointer; }\n<\/style>\n<\/head>\n<body>\n<header><span>🔨 몬스터 잡기<\/span><span id=\"time\">30초<\/span><span id=\"score\">0점<\/span><\/header>\n<div id=\"grid\"><\/div>\n<div id=\"overlay\"><h1 id=\"ov-title\">몬스터 잡기<\/h1><p id=\"ov-sub\" style=\"font-size:26px\">튀어나오는 몬스터를 클릭하세요!<\/p><button onclick=\"start()\">시작!<\/button><\/div>\n<script>\n\"use strict\";\nconst EMOJIS = [\"🐙\",\"🦄\",\"🐸\",\"🦊\",\"🐳\",\"🐤\"];\nconst grid = document.getElementById(\"grid\");\nconst holes = [];\nfor (let i = 0; i < 9; i++){\n  const b = document.createElement(\"button\");\n  b.className = \"hole\"; b.textContent = \"🐙\";\n  b.addEventListener(\"click\", () => bonk(b));\n  grid.appendChild(b); holes.push(b);\n}\nlet score = 0, time = 30, popTimer = null, tickTimer = null, playing = false;\n\nfunction start(){\n  document.getElementById(\"overlay\").classList.add(\"hide\");\n  score = 0; time = 30; playing = true;\n  update();\n  tickTimer = setInterval(() => {\n    time--; update();\n    if (time <= 0) end();\n  }, 1000);\n  pop();\n}\nfunction update(){\n  document.getElementById(\"time\").textContent = `${time}초`;\n  document.getElementById(\"score\").textContent = `${score}점`;\n}\nfunction pop(){\n  if (!playing) return;\n  holes.forEach(h => h.classList.remove(\"up\"));\n  const n = Math.random() < .25 ? 2 : 1; // 가끔 2마리\n  for (let i = 0; i < n; i++){\n    const h = holes[Math.floor(Math.random() * holes.length)];\n    h.textContent = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];\n    h.classList.add(\"up\");\n  }\n  const delay = Math.max(500, 950 - score * 12); // 점수 오르면 점점 빨라짐\n  popTimer = setTimeout(pop, delay);\n}\nfunction bonk(h){\n  if (!playing || !h.classList.contains(\"up\")) return;\n  score++; update();\n  h.classList.remove(\"up\"); h.classList.add(\"bonk\");\n  setTimeout(() => h.classList.remove(\"bonk\"), 150);\n}\nfunction end(){\n  playing = false;\n  clearInterval(tickTimer); clearTimeout(popTimer);\n  holes.forEach(h => h.classList.remove(\"up\"));\n  document.getElementById(\"ov-title\").textContent = \"⏰ 끝!\";\n  document.getElementById(\"ov-sub\").textContent = `${score}마리를 잡았어요!`;\n  document.querySelector(\"#overlay button\").textContent = \"다시 하기\";\n  document.getElementById(\"overlay\").classList.remove(\"hide\");\n}\n<\/script>\n<\/body>\n<\/html>\n", "/content/minigame/03-ox-quiz/index.html": "<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n<title>뭉클 O/X 퀴즈<\/title>\n<style>\n* { margin:0; padding:0; box-sizing:border-box; font-family:\"Pretendard\",\"Noto Sans KR\",\"Malgun Gothic\",sans-serif; user-select:none; }\nhtml,body { width:100%; height:100%; overflow:hidden; }\nbody { background:#FFF9E8; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; padding:20px; }\n#progress { font-size:22px; font-weight:700; color:#8a7a5a; }\n#question { font-size:38px; font-weight:800; text-align:center; line-height:1.4; min-height:2.8em; max-width:900px; }\n#buttons { display:flex; gap:40px; }\n#buttons button { width:220px; height:220px; border:none; border-radius:30px; font-size:110px;\n  font-weight:900; cursor:pointer; color:#fff; box-shadow:0 8px 0 rgba(0,0,0,.2); }\n#btn-o { background:#2e9e44; } #btn-x { background:#F5573B; }\n#buttons button:active { transform:translateY(5px); box-shadow:0 3px 0 rgba(0,0,0,.2); }\n#feedback { font-size:30px; font-weight:800; min-height:1.4em; text-align:center; }\n#feedback .exp { display:block; font-size:22px; font-weight:500; color:#6a5a4a; margin-top:6px; }\n#overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none;\n  align-items:center; justify-content:center; flex-direction:column; gap:18px; color:#fff; }\n#overlay.show { display:flex; }\n#overlay h1 { font-size:54px; }\n#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;\n  border-radius:16px; background:#F5573B; color:#fff; cursor:pointer; }\n<\/style>\n<\/head>\n<body>\n<div id=\"progress\"><\/div>\n<div id=\"question\"><\/div>\n<div id=\"buttons\">\n  <button id=\"btn-o\">O<\/button>\n  <button id=\"btn-x\">X<\/button>\n<\/div>\n<div id=\"feedback\"><\/div>\n<div id=\"overlay\"><h1 id=\"ov-title\"><\/h1><p id=\"ov-sub\" style=\"font-size:28px\"><\/p><button onclick=\"start()\">다시 하기<\/button><\/div>\n<script>\n\"use strict\";\n/* ── 문항은 여기만 고치면 됩니다 (콘텐츠 교체 지점) ── */\nconst QUESTIONS = [\n  { q: \"뭉클 부스에서는 나만의 클리커를 만들 수 있다.\", a: true,  exp: \"퀴즈 풀고 도안 골라서 직접 꾸며요!\" },\n  { q: \"뭉클 몬스터즈는 모두 5마리다.\",                 a: true,  exp: \"부스 곳곳에 숨어 있어요. 다 만나 보세요!\" },\n  { q: \"몬스터 퀴즈는 컴퓨터로만 풀 수 있다.\",           a: false, exp: \"내 스마트폰으로 몬스터에 콕! 접촉하면 돼요.\" },\n  { q: \"만들기존에 가려면 화면의 '띵동' 호출을 기다리면 된다.\", a: true, exp: \"자리에서 기다리면 화면이 알려줘요.\" },\n  { q: \"완성한 클리커는 김토티 심사를 받을 수 있다.\",     a: true,  exp: \"이벤트존에서 심사받고 경품 룰렛까지!\" },\n];\nlet idx = 0, score = 0, waiting = false;\nconst $ = id => document.getElementById(id);\n\nfunction start(){\n  $(\"overlay\").classList.remove(\"show\");\n  idx = 0; score = 0; waiting = false;\n  render();\n}\nfunction render(){\n  $(\"progress\").textContent = `${idx + 1} / ${QUESTIONS.length}`;\n  $(\"question\").textContent = QUESTIONS[idx].q;\n  $(\"feedback\").textContent = \"\";\n}\nfunction answer(v){\n  if (waiting) return;\n  waiting = true;\n  const cur = QUESTIONS[idx];\n  const right = v === cur.a;\n  if (right) score++;\n  $(\"feedback\").innerHTML = (right ? \"⭕ 정답!\" : \"❌ 아쉬워요!\") +\n    `<span class=\"exp\">${cur.exp}<\/span>`;\n  setTimeout(() => {\n    waiting = false;\n    idx++;\n    if (idx >= QUESTIONS.length){\n      $(\"ov-title\").textContent = score === QUESTIONS.length ? \"🏆 만점!\" : \"🎉 참 잘했어요!\";\n      $(\"ov-sub\").textContent = `${QUESTIONS.length}문제 중 ${score}문제 정답`;\n      $(\"overlay\").classList.add(\"show\");\n    } else render();\n  }, 1800);\n}\n$(\"btn-o\").addEventListener(\"click\", () => answer(true));\n$(\"btn-x\").addEventListener(\"click\", () => answer(false));\nstart();\n<\/script>\n<\/body>\n<\/html>\n", "/content/minigame/04-balloon-pop/index.html": "<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n<title>풍선 팡팡<\/title>\n<style>\n* { margin:0; padding:0; box-sizing:border-box; font-family:\"Pretendard\",\"Noto Sans KR\",\"Malgun Gothic\",sans-serif; user-select:none; }\nhtml,body { width:100%; height:100%; overflow:hidden; }\nbody { background:linear-gradient(#cfe9ff, #eef7ff); }\nheader { position:fixed; top:0; left:0; right:0; display:flex; gap:36px; justify-content:center;\n  padding:12px; font-size:26px; font-weight:800; color:#2a5a8a; z-index:5; }\n.balloon { position:absolute; border:none; background:transparent; cursor:pointer;\n  font-size:72px; line-height:1; filter:drop-shadow(0 4px 4px rgba(0,0,0,.15)); }\n.balloon.pop { animation:pop .18s forwards; }\n@keyframes pop { to { transform:scale(2); opacity:0; } }\n#overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; z-index:10;\n  align-items:center; justify-content:center; flex-direction:column; gap:18px; color:#fff; }\n#overlay.hide { display:none; }\n#overlay h1 { font-size:54px; }\n#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;\n  border-radius:16px; background:#F5573B; color:#fff; cursor:pointer; }\n<\/style>\n<\/head>\n<body>\n<header><span>🎈 풍선 팡팡<\/span><span id=\"time\">40초<\/span><span id=\"score\">0점<\/span><\/header>\n<div id=\"overlay\"><h1 id=\"ov-title\">풍선 팡팡<\/h1><p id=\"ov-sub\" style=\"font-size:26px\">떠오르는 풍선을 날아가기 전에 클릭!<\/p><button onclick=\"start()\">시작!<\/button><\/div>\n<script>\n\"use strict\";\nconst COLORS = [\"🎈\",\"🟠\",\"🟣\",\"🔵\",\"🟢\"].map((_, i) => i); // 색은 filter로\nconst $ = id => document.getElementById(id);\nlet score = 0, time = 40, playing = false, spawnTimer = null, tickTimer = null, raf = null;\nconst balloons = new Set();\n\nfunction start(){\n  $(\"overlay\").classList.add(\"hide\");\n  document.querySelectorAll(\".balloon\").forEach(b => b.remove());\n  balloons.clear();\n  score = 0; time = 40; playing = true;\n  update();\n  tickTimer = setInterval(() => { time--; update(); if (time <= 0) end(); }, 1000);\n  spawn();\n  loop();\n}\nfunction update(){\n  $(\"time\").textContent = `${time}초`;\n  $(\"score\").textContent = `${score}점`;\n}\nfunction spawn(){\n  if (!playing) return;\n  const b = document.createElement(\"button\");\n  b.className = \"balloon\";\n  b.textContent = \"🎈\";\n  b.style.filter = `hue-rotate(${Math.floor(Math.random()*300)}deg) drop-shadow(0 4px 4px rgba(0,0,0,.15))`;\n  b.dataset.y = String(window.innerHeight + 40);\n  b.dataset.v = String(1.2 + Math.random() * 1.8); // 상승 속도\n  b.style.left = Math.floor(30 + Math.random() * (window.innerWidth - 130)) + \"px\";\n  b.addEventListener(\"click\", () => {\n    if (!playing || b.classList.contains(\"pop\")) return;\n    score++; update();\n    b.classList.add(\"pop\");\n    setTimeout(() => { b.remove(); balloons.delete(b); }, 180);\n  });\n  document.body.appendChild(b);\n  balloons.add(b);\n  spawnTimer = setTimeout(spawn, Math.max(350, 800 - score * 10));\n}\nfunction loop(){\n  if (!playing) return;\n  for (const b of balloons){\n    if (b.classList.contains(\"pop\")) continue;\n    let y = parseFloat(b.dataset.y) - parseFloat(b.dataset.v);\n    b.dataset.y = String(y);\n    b.style.top = y + \"px\";\n    if (y < -90){ b.remove(); balloons.delete(b); } // 놓친 풍선\n  }\n  raf = requestAnimationFrame(loop);\n}\nfunction end(){\n  playing = false;\n  clearInterval(tickTimer); clearTimeout(spawnTimer); cancelAnimationFrame(raf);\n  $(\"ov-title\").textContent = \"⏰ 끝!\";\n  $(\"ov-sub\").textContent = `풍선 ${score}개를 터뜨렸어요!`;\n  document.querySelector(\"#overlay button\").textContent = \"다시 하기\";\n  $(\"overlay\").classList.remove(\"hide\");\n}\n<\/script>\n<\/body>\n<\/html>\n", "/content/minigame/05-odd-one-out/index.html": "<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n<title>다른 몬스터 찾기<\/title>\n<style>\n* { margin:0; padding:0; box-sizing:border-box; font-family:\"Pretendard\",\"Noto Sans KR\",\"Malgun Gothic\",sans-serif; user-select:none; }\nhtml,body { width:100%; height:100%; overflow:hidden; }\nbody { background:#F3ECFF; display:flex; flex-direction:column; align-items:center; }\nheader { display:flex; gap:36px; padding:14px; font-size:26px; font-weight:800; color:#5a3a8a; }\n#grid { flex:1; display:grid; gap:10px; align-content:center; }\n#grid button { border:none; border-radius:14px; background:#fff; cursor:pointer;\n  box-shadow:0 3px 0 rgba(0,0,0,.1); display:flex; align-items:center; justify-content:center; }\n#grid button.wrong { background:#ffd9d0; }\n#overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex;\n  align-items:center; justify-content:center; flex-direction:column; gap:18px; color:#fff; }\n#overlay.hide { display:none; }\n#overlay h1 { font-size:54px; }\n#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;\n  border-radius:16px; background:#F5573B; color:#fff; cursor:pointer; }\n<\/style>\n<\/head>\n<body>\n<header><span>🔍 다른 몬스터 찾기<\/span><span id=\"time\">45초<\/span><span id=\"level\">1단계<\/span><\/header>\n<div id=\"grid\"><\/div>\n<div id=\"overlay\"><h1 id=\"ov-title\">다른 몬스터 찾기<\/h1><p id=\"ov-sub\" style=\"font-size:26px\">무리 속에 하나만 다른 몬스터가 있어요!<\/p><button onclick=\"start()\">시작!<\/button><\/div>\n<script>\n\"use strict\";\n/* 비슷한 이모지 짝 — [무리, 숨은 하나] */\nconst PAIRS = [\n  [\"🐸\",\"🐢\"], [\"🐤\",\"🐥\"], [\"🦊\",\"🦝\"], [\"🐙\",\"🦑\"], [\"🐳\",\"🐋\"],\n  [\"😀\",\"😃\"], [\"🌕\",\"🌝\"], [\"⭐\",\"🌟\"], [\"🍩\",\"🍪\"], [\"🎈\",\"🍎\"],\n];\nconst $ = id => document.getElementById(id);\nlet level = 1, time = 45, playing = false, tickTimer = null;\n\nfunction start(){\n  $(\"overlay\").classList.add(\"hide\");\n  level = 1; time = 45; playing = true;\n  update();\n  tickTimer = setInterval(() => { time--; update(); if (time <= 0) end(); }, 1000);\n  round();\n}\nfunction update(){\n  $(\"time\").textContent = `${time}초`;\n  $(\"level\").textContent = `${level}단계`;\n}\nfunction round(){\n  const n = Math.min(2 + level, 7); // 3×3 → 최대 7×7\n  const cell = Math.min(90, Math.floor(430 / n));\n  const grid = $(\"grid\");\n  grid.style.gridTemplateColumns = `repeat(${n}, ${cell}px)`;\n  grid.style.gridAutoRows = `${cell}px`;\n  grid.innerHTML = \"\";\n  const [base, odd] = PAIRS[Math.floor(Math.random() * PAIRS.length)];\n  const oddIdx = Math.floor(Math.random() * n * n);\n  for (let i = 0; i < n * n; i++){\n    const b = document.createElement(\"button\");\n    b.textContent = i === oddIdx ? odd : base;\n    b.style.fontSize = Math.floor(cell * .62) + \"px\";\n    b.addEventListener(\"click\", () => {\n      if (!playing) return;\n      if (i === oddIdx){ level++; time = Math.min(time + 3, 60); update(); round(); } // 보너스 3초\n      else { b.classList.add(\"wrong\"); time = Math.max(time - 2, 1); update();\n             setTimeout(() => b.classList.remove(\"wrong\"), 300); }\n    });\n    grid.appendChild(b);\n  }\n}\nfunction end(){\n  playing = false;\n  clearInterval(tickTimer);\n  $(\"grid\").innerHTML = \"\";\n  $(\"ov-title\").textContent = \"⏰ 끝!\";\n  $(\"ov-sub\").textContent = `${level - 1}단계까지 통과했어요!`;\n  document.querySelector(\"#overlay button\").textContent = \"다시 하기\";\n  $(\"overlay\").classList.remove(\"hide\");\n}\n<\/script>\n<\/body>\n<\/html>\n", "/content/minigame/06-memory-order/index.html": "<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n<title>순서 기억하기<\/title>\n<style>\n* { margin:0; padding:0; box-sizing:border-box; font-family:\"Pretendard\",\"Noto Sans KR\",\"Malgun Gothic\",sans-serif; user-select:none; }\nhtml,body { width:100%; height:100%; overflow:hidden; }\nbody { background:#2b2b3e; display:flex; flex-direction:column; align-items:center; color:#fff; }\nheader { display:flex; gap:36px; padding:14px; font-size:26px; font-weight:800; }\n#msg { font-size:24px; font-weight:700; min-height:1.5em; color:#ffd97a; }\n#pads { flex:1; display:grid; grid-template-columns:repeat(2, 200px); grid-auto-rows:200px;\n  gap:22px; align-content:center; }\n.pad { border:none; border-radius:24px; font-size:96px; cursor:pointer; opacity:.45;\n  transition:opacity .12s, transform .12s; }\n.pad.lit { opacity:1; transform:scale(1.06); }\n.pad:nth-child(1){ background:#e74c3c; } .pad:nth-child(2){ background:#2ecc71; }\n.pad:nth-child(3){ background:#3498db; } .pad:nth-child(4){ background:#f1c40f; }\n#overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); display:flex;\n  align-items:center; justify-content:center; flex-direction:column; gap:18px; }\n#overlay.hide { display:none; }\n#overlay h1 { font-size:54px; }\n#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;\n  border-radius:16px; background:#F5573B; color:#fff; cursor:pointer; }\n<\/style>\n<\/head>\n<body>\n<header><span>🧠 순서 기억하기<\/span><span id=\"level\">1단계<\/span><\/header>\n<div id=\"msg\"><\/div>\n<div id=\"pads\"><\/div>\n<div id=\"overlay\"><h1 id=\"ov-title\">순서 기억하기<\/h1><p id=\"ov-sub\" style=\"font-size:26px\">몬스터가 반짝인 순서 그대로 클릭하세요!<\/p><button onclick=\"start()\">시작!<\/button><\/div>\n<script>\n\"use strict\";\nconst MONSTERS = [\"🐙\",\"🦄\",\"🐸\",\"🐤\"];\nconst $ = id => document.getElementById(id);\nconst pads = [];\nconst padsEl = $(\"pads\");\nMONSTERS.forEach((m, i) => {\n  const b = document.createElement(\"button\");\n  b.className = \"pad\"; b.textContent = m;\n  b.addEventListener(\"click\", () => press(i));\n  padsEl.appendChild(b); pads.push(b);\n});\nlet seq = [], input = [], showing = false, level = 1;\n\nfunction start(){\n  $(\"overlay\").classList.add(\"hide\");\n  seq = []; level = 1;\n  next();\n}\nfunction next(){\n  input = [];\n  seq.push(Math.floor(Math.random() * 4));\n  $(\"level\").textContent = `${level}단계`;\n  playSeq();\n}\nasync function playSeq(){\n  showing = true;\n  $(\"msg\").textContent = \"잘 보세요… 👀\";\n  await sleep(700);\n  for (const i of seq){\n    pads[i].classList.add(\"lit\");\n    await sleep(Math.max(280, 550 - level * 25));\n    pads[i].classList.remove(\"lit\");\n    await sleep(160);\n  }\n  showing = false;\n  $(\"msg\").textContent = \"따라서 클릭!\";\n}\nfunction press(i){\n  if (showing) return;\n  flash(i);\n  input.push(i);\n  const idx = input.length - 1;\n  if (seq[idx] !== i){ return end(); }\n  if (input.length === seq.length){\n    level++;\n    $(\"msg\").textContent = \"🎉 통과!\";\n    setTimeout(next, 900);\n  }\n}\nfunction flash(i){\n  pads[i].classList.add(\"lit\");\n  setTimeout(() => pads[i].classList.remove(\"lit\"), 200);\n}\nfunction end(){\n  $(\"ov-title\").textContent = \"💥 앗, 순서가 달라요!\";\n  $(\"ov-sub\").textContent = `${level - 1}단계까지 기억했어요!`;\n  document.querySelector(\"#overlay button\").textContent = \"다시 하기\";\n  $(\"overlay\").classList.remove(\"hide\");\n}\nconst sleep = ms => new Promise(r => setTimeout(r, ms));\n<\/script>\n<\/body>\n<\/html>\n"},
+  number: 6,
+};
+window.WebSocket = class { constructor() { this.readyState = 0; } send() {} close() {} };
+const _json = (data) => Promise.resolve({ ok: true, status: 200, json: async () => data });
+window.fetch = (url, opts) => {
+  const u = String(url);
+  if (u.includes("/api/config"))    return _json({ stations: ["A","B"], called_seconds: 8, brand_color: "#F5573B" });
+  if (u.includes("/api/intro"))     return _json({ intro: DEMO.intro });
+  if (u.includes("/api/maker"))     return _json({ maker: DEMO.maker });
+  if (u.includes("/api/dosan"))     return _json({ dosan: DEMO.dosan });
+  if (u.includes("/api/minigames")) return _json({ minigames: DEMO.games });
+  if (u.includes("/api/code/verify")) {
+    const m = DEMO.codes[JSON.parse(opts.body).code];
+    return _json(m ? { ok: true, monster: m } : { ok: false });
+  }
+  if (u.includes("/api/complete")) { DEMO.number++; return _json({ ok: true, number: DEMO.number, printed: true }); }
+  return _json({});
+};
+function setGameFrame(url) {
+  document.getElementById("game-frame").srcdoc = DEMO.gameSrc[url] || "<p>준비 중</p>";
+}
+function clearGameFrame() {
+  const f = document.getElementById("game-frame");
+  f.removeAttribute("srcdoc"); f.src = "about:blank";
+}
+
+/* 뭉클 부스 키오스크 상태 머신
+ *
+ * 어트랙트 → 알아보기 → 코드 입력 → 도안 선택 → 인쇄 → 대기(미니게임/소개) → 띵동 호출 → 어트랙트
+ *
+ * - 스테이션 지정: ?station=A (기본 A) — 호출 이벤트는 자기 스테이션만 반응
+ * - 호출 인터럽트 최우선: 어떤 화면(미니게임 포함)에서도 called 이벤트가 오면 즉시 오버레이
+ * - 사운드: WebAudio 합성 띵동 (외부 파일·인터넷 불필요)
+ */
+"use strict";
+
+const params = new URLSearchParams(location.search);
+const STATION = (params.get("station") || "A").toUpperCase();
+const IDLE_LIMIT_MS = 90 * 1000; // 어트랙트 자동 복귀 (대기 화면 제외)
+
+let calledSeconds = 12;
+let introImages = [];
+let introIdx = 0;
+let waitIntroIdx = 0;
+let myNumber = null;
+let code = "";
+let idleTimer = null;
+
+const $ = (id) => document.getElementById(id);
+const screens = ["attract", "intro", "code", "maker", "printing", "wait", "called"];
+let current = "attract";
+
+function show(name) {
+  current = name;
+  for (const s of screens) $("screen-" + s).classList.toggle("hidden", s !== name);
+  resetIdle();
+}
+
+/* ── 유휴 복귀: 진행 중 화면에서 조작이 없으면 어트랙트로 (대기·호출 화면은 예외) ── */
+function resetIdle() {
+  clearTimeout(idleTimer);
+  if (current === "wait" || current === "called" || current === "attract") return;
+  idleTimer = setTimeout(() => show("attract"), IDLE_LIMIT_MS);
+}
+document.addEventListener("click", resetIdle);
+
+/* ── 사운드: 띵동 (WebAudio 합성) ── */
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+}
+function tone(freq, t0, dur, gain = 0.5) {
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = "sine"; o.frequency.value = freq;
+  g.gain.setValueAtTime(gain, t0);
+  g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t0); o.stop(t0 + dur);
+}
+function dingDong(times = 3) {
+  ensureAudio();
+  const now = audioCtx.currentTime;
+  for (let i = 0; i < times; i++) {
+    tone(880, now + i * 1.1, 0.9);        // 띵
+    tone(659, now + i * 1.1 + 0.35, 1.0); // 동
+  }
+}
+function clickBeep() { ensureAudio(); tone(1200, audioCtx.currentTime, 0.08, 0.15); }
+
+/* ── ① 어트랙트 ── */
+// 브로슈어는 대기존에서 읽는 흐름이므로 시작 = 바로 코드 입력 (소개는 선택)
+$("btn-start").addEventListener("click", () => { ensureAudio(); startCode(); });
+$("btn-attract-intro").addEventListener("click", () => { ensureAudio(); startIntro(); });
+
+/* ── ② 뭉클 알아보기 ── */
+function startIntro() {
+  introIdx = 0;
+  renderIntro();
+  show("intro");
+}
+function renderIntro() {
+  const img = $("intro-img"), empty = $("intro-empty");
+  if (introImages.length === 0) {
+    img.classList.add("hidden"); empty.classList.remove("hidden");
+    $("intro-dots").textContent = "";
+    return;
+  }
+  img.classList.remove("hidden"); empty.classList.add("hidden");
+  img.src = introImages[introIdx];
+  $("intro-dots").textContent = introImages.map((_, i) => (i === introIdx ? "●" : "○")).join(" ");
+}
+$("btn-intro-prev").addEventListener("click", () => {
+  if (!introImages.length) return;
+  introIdx = (introIdx - 1 + introImages.length) % introImages.length; renderIntro();
+});
+$("btn-intro-next").addEventListener("click", () => {
+  if (!introImages.length) return;
+  introIdx = (introIdx + 1) % introImages.length; renderIntro();
+});
+$("btn-to-code").addEventListener("click", startCode);
+
+/* ── ③ 코드 입력 ── */
+function startCode() {
+  code = "";
+  renderCode();
+  setCodeMsg("스마트폰으로 몬스터에 접촉해 퀴즈를 풀면 코드를 받아요 📱", "");
+  show("code");
+}
+function renderCode() {
+  const digits = document.querySelectorAll("#code-display .digit");
+  digits.forEach((d, i) => (d.textContent = code[i] || ""));
+}
+function setCodeMsg(text, cls) {
+  const el = $("code-msg");
+  el.textContent = text;
+  el.className = "code-msg" + (cls ? " " + cls : "");
+}
+function buildKeypad() {
+  const pad = $("keypad");
+  const keys = ["1","2","3","4","5","6","7","8","9","","0","del"];
+  for (const k of keys) {
+    if (k === "") { pad.appendChild(document.createElement("span")); continue; }
+    const b = document.createElement("button");
+    if (k === "del") { b.textContent = "지우기"; b.className = "key-del"; }
+    else b.textContent = k;
+    b.addEventListener("click", () => { clickBeep(); pressKey(k); });
+    pad.appendChild(b);
+  }
+}
+async function pressKey(k) {
+  if (k === "del") { code = code.slice(0, -1); renderCode(); return; }
+  if (code.length >= 3) return;
+  code += k;
+  renderCode();
+  if (code.length === 3) await verifyCode();
+}
+async function verifyCode() {
+  try {
+    const r = await fetch("/api/code/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, station: STATION }),
+    });
+    const j = await r.json();
+    if (j.ok) {
+      setCodeMsg(`정답! ${j.monster} 몬스터를 만났군요 🎉`, "ok");
+      setTimeout(() => startMaker(), 900);
+    } else {
+      setCodeMsg("코드가 맞지 않아요 — 다시 확인해 주세요", "bad");
+      const disp = $("code-display");
+      disp.classList.add("error");
+      setTimeout(() => { disp.classList.remove("error"); code = ""; renderCode(); }, 700);
+    }
+  } catch (e) {
+    setCodeMsg("서버 연결을 확인해 주세요", "bad");
+    code = ""; renderCode();
+  }
+}
+$("btn-code-back").addEventListener("click", startIntro);
+
+/* ── ④ 도안 만들기 — 프로그램 3종 (성격검사 · 이상형 월드컵 · 감정 이모티콘) ── */
+let makerConf = {};
+
+function makerBody(...nodes) {
+  const body = $("maker-body");
+  body.innerHTML = "";
+  for (const n of nodes) body.appendChild(n);
+  return body;
+}
+function el(tag, cls, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html !== undefined) e.innerHTML = html;
+  return e;
+}
+function bigChoice(emoji, label, sub, onclick) {
+  const b = document.createElement("button");
+  b.innerHTML = (emoji ? `<span class="c-emoji">${emoji}</span>` : "") +
+    `<span>${label}</span>` + (sub ? `<span class="m-desc">${sub}</span>` : "");
+  b.addEventListener("click", () => { clickBeep(); onclick(); });
+  return b;
+}
+
+async function startMaker() {
+  try {
+    makerConf = (await (await fetch("/api/maker")).json()).maker || {};
+  } catch (e) { makerConf = {}; }
+  $("maker-title").textContent = "나만의 도안 만들기 — 방법을 고르세요";
+  const menu = el("div", "maker-menu");
+  const programs = [
+    ["personality", () => runPersonality(makerConf.personality)],
+    ["worldcup",    () => runWorldcup(makerConf.worldcup)],
+    ["emotion",     () => runEmotion(makerConf.emotion)],
+  ];
+  let any = false;
+  for (const [key, run] of programs) {
+    const conf = makerConf[key];
+    if (!conf) continue;
+    any = true;
+    const b = document.createElement("button");
+    b.innerHTML = `<span class="m-emoji">${conf.emoji || "🎨"}</span>` +
+      `<span>${conf.title}</span><span class="m-desc">${conf.desc || ""}</span>`;
+    b.addEventListener("click", () => { clickBeep(); run(); });
+    menu.appendChild(b);
+  }
+  if (!any) { startDosanGrid(); return; } // 설정 없으면 목록 선택으로 폴백
+  makerBody(menu);
+  show("maker");
+}
+
+/* 프로그램 1 — 성격검사 */
+function runPersonality(conf) {
+  $("maker-title").textContent = conf.title;
+  const scores = {};
+  let qi = 0;
+  function ask() {
+    const q = conf.questions[qi];
+    const prog = el("div", "maker-progress", `${qi + 1} / ${conf.questions.length}`);
+    const question = el("div", "maker-q", q.q);
+    const choices = el("div", "maker-choices");
+    for (const a of q.a) {
+      choices.appendChild(bigChoice("", a.t, "", () => {
+        for (const [name, pt] of Object.entries(a.s || {}))
+          scores[name] = (scores[name] || 0) + pt;
+        qi++;
+        if (qi < conf.questions.length) ask();
+        else finish();
+      }));
+    }
+    makerBody(prog, question, choices);
+  }
+  function finish() {
+    let best = null;
+    for (const [name, pt] of Object.entries(scores))
+      if (!best || pt > scores[best]) best = name;
+    const r = conf.results[best] || {};
+    showMakerResult(r.emoji || "🐾", best, r.line || "", r.pdf);
+  }
+  ask();
+  show("maker");
+}
+
+/* 프로그램 2 — 음식 이상형 월드컵 */
+function runWorldcup(conf) {
+  $("maker-title").textContent = conf.title;
+  let round = [...conf.candidates].sort(() => Math.random() - .5);
+  let next = [], mi = 0;
+  const roundName = n => n === 2 ? "결승" : `${n}강`;
+  function match() {
+    const a = round[mi], b = round[mi + 1];
+    const prog = el("div", "maker-progress",
+      `${roundName(round.length)} · ${mi / 2 + 1} / ${round.length / 2}`);
+    const question = el("div", "maker-q", "더 좋아하는 쪽을 클릭!");
+    const choices = el("div", "maker-choices");
+    choices.appendChild(bigChoice(a.emoji, a.name, "", () => pick(a)));
+    choices.appendChild(el("span", "vs-badge", "VS"));
+    choices.appendChild(bigChoice(b.emoji, b.name, "", () => pick(b)));
+    makerBody(prog, question, choices);
+  }
+  function pick(winner) {
+    next.push(winner);
+    mi += 2;
+    if (mi >= round.length) {
+      if (next.length === 1)
+        return showMakerResult(next[0].emoji, next[0].name, "나의 최애 음식 우승!", next[0].pdf);
+      round = next; next = []; mi = 0;
+    }
+    match();
+  }
+  match();
+  show("maker");
+}
+
+/* 프로그램 3 — 감정 이모티콘 */
+function runEmotion(conf) {
+  $("maker-title").textContent = conf.title;
+  const question = el("div", "maker-q", conf.prompt || "지금 내 기분은?");
+  const choices = el("div", "maker-choices");
+  for (const emo of conf.emotions)
+    choices.appendChild(bigChoice(emo.emoji, emo.name, "", () =>
+      showMakerResult(emo.emoji, emo.name, "오늘의 내 감정 이모티콘!", emo.pdf)));
+  makerBody(question, choices);
+  show("maker");
+}
+
+/* 결과 화면 → 인쇄 확정 */
+function showMakerResult(emoji, name, line, pdf) {
+  $("maker-title").textContent = "결과가 나왔어요!";
+  const box = el("div", "maker-choices");
+  box.appendChild(bigChoice("🖨", "이 도안으로 인쇄하기", "", () => {
+    if (pdf) complete(pdf);
+    else startDosanGrid(); // 결과에 도안이 연결 안 된 경우 폴백
+  }));
+  box.appendChild(bigChoice("↩", "다른 방법으로 만들기", "", startMaker));
+  makerBody(
+    el("div", "maker-result-emoji", emoji),
+    el("div", "maker-result-name", name),
+    el("div", "maker-result-line", line),
+    box,
+  );
+}
+
+/* 폴백 — 전체 도안 목록에서 직접 선택 */
+async function startDosanGrid() {
+  $("maker-title").textContent = "마음에 드는 도안을 고르세요";
+  const grid = el("div", "dosan-grid");
+  let list = [];
+  try { list = (await (await fetch("/api/dosan")).json()).dosan; } catch (e) {}
+  if (!list.length) {
+    makerBody(el("p", "", '<span style="font-size:30px;color:#999">도안 준비 중이에요 — 스태프를 불러 주세요</span>'));
+    show("maker");
+    return;
+  }
+  if (list.length === 1) { complete(list[0].file); return; }
+  for (const d of list) {
+    const b = document.createElement("button");
+    b.textContent = "🎨 " + d.label;
+    b.addEventListener("click", () => { clickBeep(); complete(d.file); });
+    grid.appendChild(b);
+  }
+  makerBody(grid);
+  show("maker");
+}
+
+/* ── ⑤ 완료 → 인쇄 → 대기 등록 ── */
+async function complete(dosanFile) {
+  show("printing");
+  try {
+    const r = await fetch("/api/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ station: STATION, dosan: dosanFile }),
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      alert(j.detail || "등록에 실패했어요 — 스태프를 불러 주세요");
+      show("attract");
+      return;
+    }
+    const j = await r.json();
+    myNumber = j.number;
+    startWait();
+  } catch (e) {
+    alert("서버 연결을 확인해 주세요");
+    show("attract");
+  }
+}
+
+/* ── ⑥ 대기 (미니게임 · 소개) ── */
+async function startWait() {
+  $("wait-number").textContent = `No. ${String(myNumber).padStart(3, "0")}`;
+  selectTab("game");
+  exitGame();
+  await loadGameMenu();
+  waitIntroIdx = 0;
+  renderWaitIntro();
+  show("wait");
+}
+function selectTab(which) {
+  $("tab-game").classList.toggle("active", which === "game");
+  $("tab-intro").classList.toggle("active", which === "intro");
+  const inGame = !$("wait-game-frame-wrap").classList.contains("hidden");
+  $("wait-game-menu").classList.toggle("hidden", which !== "game" || inGame);
+  $("wait-game-frame-wrap").classList.toggle("hidden", which !== "game" || !inGame);
+  $("wait-intro").classList.toggle("hidden", which !== "intro");
+}
+$("tab-game").addEventListener("click", () => selectTab("game"));
+$("tab-intro").addEventListener("click", () => selectTab("intro"));
+
+async function loadGameMenu() {
+  const menu = $("wait-game-menu");
+  menu.innerHTML = "";
+  let games = [];
+  try {
+    const r = await fetch("/api/minigames");
+    games = (await r.json()).minigames;
+  } catch (e) { /* 빈 메뉴 */ }
+  if (!games.length) {
+    menu.innerHTML = '<p style="font-size:26px;color:#999">미니게임 준비 중!</p>';
+    return;
+  }
+  for (const g of games) {
+    const b = document.createElement("button");
+    b.innerHTML = `<span class="g-emoji">${g.emoji}</span><span>${g.title}</span>` +
+      (g.desc ? `<span class="g-desc">${g.desc}</span>` : "");
+    b.addEventListener("click", () => { clickBeep(); openGame(g.url); });
+    menu.appendChild(b);
+  }
+}
+function openGame(url) {
+  setGameFrame(url);
+  $("wait-game-menu").classList.add("hidden");
+  $("wait-game-frame-wrap").classList.remove("hidden");
+}
+function exitGame() {
+  clearGameFrame();
+  $("wait-game-frame-wrap").classList.add("hidden");
+  $("wait-game-menu").classList.remove("hidden");
+}
+$("btn-game-exit").addEventListener("click", () => { exitGame(); selectTab("game"); });
+
+function renderWaitIntro() {
+  if (!introImages.length) return;
+  $("wait-intro-img").src = introImages[waitIntroIdx];
+}
+$("btn-wintro-prev").addEventListener("click", () => {
+  if (!introImages.length) return;
+  waitIntroIdx = (waitIntroIdx - 1 + introImages.length) % introImages.length; renderWaitIntro();
+});
+$("btn-wintro-next").addEventListener("click", () => {
+  if (!introImages.length) return;
+  waitIntroIdx = (waitIntroIdx + 1) % introImages.length; renderWaitIntro();
+});
+
+/* ── ⑦ 띵동 호출 — 최우선 인터럽트 ── */
+function onCalled(number) {
+  exitGame(); // 게임 상태는 버린다 (호출이 항상 우선)
+  $("called-number").textContent = `No. ${String(number).padStart(3, "0")}`;
+  show("called");
+  dingDong(3);
+  setTimeout(() => { myNumber = null; show("attract"); }, calledSeconds * 1000);
+}
+
+/* ── WebSocket (자동 재접속) ── */
+function connectWS() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onmessage = (ev) => {
+    let msg;
+    try { msg = JSON.parse(ev.data); } catch { return; }
+    if (msg.type === "called" && msg.station === STATION) onCalled(msg.number);
+  };
+  ws.onclose = () => setTimeout(connectWS, 2000); // 무고장 우선: 끊기면 재접속
+  ws.onerror = () => ws.close();
+  // keepalive
+  setInterval(() => { if (ws.readyState === 1) ws.send("ping"); }, 25000);
+}
+
+/* ── 초기화 ── */
+async function init() {
+  buildKeypad();
+  connectWS();
+  try {
+    const conf = await (await fetch("/api/config")).json();
+    calledSeconds = conf.called_seconds || 12;
+  } catch (e) { /* 기본값 유지 */ }
+  try {
+    introImages = (await (await fetch("/api/intro")).json()).intro;
+  } catch (e) { introImages = []; }
+  show("attract");
+}
+init();
+
+
+/* ═══ 데모 조작부 ═══ */
+const bar = document.createElement("div");
+bar.id = "demo-bar";
+bar.innerHTML = `<span class="demo-chip">🎪 데모 — 코드: <b>347 · 582 · 915 · 264 · 738</b></span>
+  <button id="demo-call">🔔 부저 누르기 (호출 시뮬레이션)</button>`;
+document.body.appendChild(bar);
+document.getElementById("demo-call").addEventListener("click", () => {
+  ensureAudio();
+  onCalled(myNumber || DEMO.number);
+});
+
+</script>
+</body>
+</html>
