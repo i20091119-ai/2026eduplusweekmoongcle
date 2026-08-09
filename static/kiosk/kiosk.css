@@ -46,12 +46,12 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
 .attract-logo-row { display: flex; align-items: center; justify-content: center; gap: 20px; }
 .attract-logo { font-size: 88px; font-weight: 900; color: var(--ink); letter-spacing: 4px;
   text-shadow: 3px 3px 0 rgba(0,0,0,.15); }
-.logo-badge { height: 190px; width: auto; max-width: 720px; object-fit: contain;
+.logo-badge { height: 165px; width: auto; max-width: 1000px; object-fit: contain;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,.18)); }
 .attract-bubbles { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }
 .attract-bubbles span { background: #fff; border-radius: 999px; padding: 8px 16px;
   font-size: 22px; font-weight: 800; color: var(--ink); box-shadow: 0 3px 0 rgba(0,0,0,.12); }
-#screen-attract h1 { font-size: 44px; line-height: 1.35; margin: 20px 0 44px; }
+#screen-attract h1 { font-size: 44px; line-height: 1.35; margin: 14px 0 34px; }
 .attract-hint { margin-top: 28px; font-size: 22px; color: #4c6b7d; }
 
 /* 공통 헤더/푸터 */
