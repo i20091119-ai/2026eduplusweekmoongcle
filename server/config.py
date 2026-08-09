@@ -28,7 +28,7 @@ QR_URL = os.environ.get("BOOTH_QR_URL", "https://moongcle.com")
 QR_CAPTION = os.environ.get("BOOTH_QR_CAPTION", "뭉클 더 알아보기")
 
 # 스테이션 목록 (퀴즈존 좌석)
-STATIONS = os.environ.get("BOOTH_STATIONS", "A,B").split(",")
+STATIONS = [s.strip() for s in os.environ.get("BOOTH_STATIONS", "A,B").split(",") if s.strip()]
 
 # 호출 화면 표시 시간(초) — 이 시간이 지나면 키오스크가 어트랙트로 복귀
 CALLED_SCREEN_SECONDS = int(os.environ.get("BOOTH_CALLED_SECONDS", "12"))

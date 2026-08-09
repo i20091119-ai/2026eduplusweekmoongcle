@@ -65,13 +65,17 @@ header { display:flex; gap:30px; padding:12px; font-size:24px; font-weight:800; 
 "use strict";
 const EMOJIS = ["🍡","🥮","🍚","🌕","🧁","🥯"];
 const $ = id => document.getElementById(id);
-let leftItems = [], tray = [], right = [], round = 1, time = 90, tick = null, playing = false, uid = 0;
+let leftItems = [], tray = [], right = [], round = 1, time = 90, tick = null, playing = false, uid = 0, ended = false;
 
 function start(){
   $("overlay").classList.add("hide");
-  round = 1; time = 90; playing = true;
+  round = 1; time = 90; playing = true; ended = false;
   clearInterval(tick);
-  tick = setInterval(() => { time--; hud(); if (time <= 0) end(false); }, 1000);
+  tick = setInterval(() => {
+    time--;
+    if (time <= 0){ time = 0; if (playing) end(false); } // 클리어 연출 중이면 타임아웃은 연출 뒤 처리
+    hud();
+  }, 1000);
   newRound();
 }
 function hud(){
@@ -142,16 +146,20 @@ function tilt(){
     $("beam").classList.add("level-flash");
     $("hint").textContent = "✨ 수평! 완벽한 떡시루!";
     setTimeout(() => {
+      if (ended) return; // 연출 중 게임이 이미 끝났으면 좀비 라운드 방지
       $("beam").classList.remove("level-flash");
       $("hint").textContent = "왼쪽 시루와 수평이 되게, 아래 떡을 골라 오른쪽 시루에 올려요!";
       round++;
       if (round > 5) return end(true);
+      if (time <= 0) return end(false); // 연출 중 시간이 다 됐으면 클리어만 반영하고 종료
       playing = true;
       newRound();
     }, 1300);
   }
 }
 function end(cleared){
+  if (ended) return;
+  ended = true;
   playing = false;
   clearInterval(tick);
   $("ov-title").textContent = cleared ? "🏆 떡시루 균형왕!" : "⏰ 끝!";

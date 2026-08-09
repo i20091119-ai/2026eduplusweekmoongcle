@@ -135,15 +135,19 @@ class Hub:
 
     async def broadcast(self, message: dict):
         data = json.dumps(message, ensure_ascii=False)
+        # 락 안에서는 스냅샷만 — 한 클라이언트가 멈춰도 전체가 안 막히게
         async with self.lock:
-            dead = []
-            for ws in self.clients:
-                try:
-                    await ws.send_text(data)
-                except Exception:
-                    dead.append(ws)
-            for ws in dead:
-                self.clients.discard(ws)
+            clients = list(self.clients)
+        dead = []
+        for ws in clients:
+            try:
+                await asyncio.wait_for(ws.send_text(data), timeout=2)
+            except Exception:
+                dead.append(ws)
+        if dead:
+            async with self.lock:
+                for ws in dead:
+                    self.clients.discard(ws)
 
 
 hub = Hub()
@@ -185,12 +189,14 @@ def health():
 @app.get("/api/config")
 def get_config():
     codes = load_codes()
+    lengths = sorted({len(c) for c in codes}) or [4]
     return {
         "stations": config.STATIONS,
         "called_seconds": config.CALLED_SCREEN_SECONDS,
         "brand_color": config.BRAND_COLOR,
-        # 키패드 자릿수 — quiz.json 코드 길이를 따라감
-        "code_length": max((len(c) for c in codes), default=4),
+        # 키패드 자릿수 — quiz.json 코드 길이를 따라감 (혼합 길이 지원)
+        "code_length": lengths[-1],
+        "code_lengths": lengths,
     }
 
 
@@ -239,22 +245,23 @@ async def complete(body: CompleteIn):
     if not queue_db.enqueue(body.station, number, body.dosan):
         raise HTTPException(409, "이 자리는 이미 대기 중입니다")
 
-    # 스탬프 + 인쇄는 스레드에서 (이벤트 루프 비차단)
-    def _stamp_and_print() -> bool:
+    # 스탬프 + 인쇄는 스레드에서 (이벤트 루프 비차단) — 결과는 요청별로 격리
+    def _stamp_and_print() -> tuple[bool, str | None]:
         out = config.DATA_DIR / "printed" / f"{queue_db.today()}_{number:03d}.pdf"
         try:
             stamping.stamp_pdf(src, number, out)
         except Exception as e:
-            printing.last_error = f"스탬프 실패: {e}"
+            err = f"스탬프 실패: {e}"
+            printing.last_error = err
             log.exception("스탬프 실패")
-            return False
+            return False, err
         return printing.print_pdf(out)
 
-    printed = await asyncio.to_thread(_stamp_and_print)
+    printed, print_error = await asyncio.to_thread(_stamp_and_print)
 
     await hub.broadcast({"type": "queue", **queue_db.status()})
     return {"ok": True, "number": number, "printed": printed,
-            "print_error": printing.last_error}
+            "print_error": print_error}
 
 
 async def _do_call(row: dict | None):
@@ -308,6 +315,10 @@ def index():
 
 
 # 정적 파일 (API 라우트보다 뒤에 마운트)
-app.mount("/content", StaticFiles(directory=config.CONTENT_DIR), name="content")
+# content 전체를 열지 않는다 — quiz.json(정답 코드)이 노출되지 않도록 필요한 폴더만
+(config.CONTENT_DIR / "intro").mkdir(parents=True, exist_ok=True)
+(config.CONTENT_DIR / "minigame").mkdir(parents=True, exist_ok=True)
+app.mount("/content/intro", StaticFiles(directory=config.CONTENT_DIR / "intro"), name="intro")
+app.mount("/content/minigame", StaticFiles(directory=config.CONTENT_DIR / "minigame"), name="minigame")
 app.mount("/admin", StaticFiles(directory=config.STATIC_DIR / "admin", html=True), name="admin")
 app.mount("/kiosk", StaticFiles(directory=config.STATIC_DIR / "kiosk", html=True), name="kiosk")

@@ -16,12 +16,13 @@ log = logging.getLogger("booth.print")
 last_error: str | None = None  # 관리 페이지 상태 표시용
 
 
-def print_pdf(path: Path) -> bool:
+def print_pdf(path: Path) -> tuple[bool, str | None]:
+    """(성공 여부, 오류 메시지). last_error는 관리 페이지 표시용 최근값."""
     global last_error
     if config.DRY_RUN:
         log.info("DRY-RUN 인쇄 생략: %s", path)
         last_error = None
-        return True
+        return True, None
     try:
         if platform.system() == "Windows":
             cmd = [config.SUMATRA_PATH, "-print-to-default", "-silent", str(path)]
@@ -39,12 +40,13 @@ def print_pdf(path: Path) -> bool:
         subprocess.run(cmd, check=True, capture_output=True, timeout=30)
         last_error = None
         log.info("인쇄 요청 완료: %s", path)
-        return True
+        return True, None
     except FileNotFoundError as e:
-        last_error = f"인쇄 명령을 찾을 수 없음: {e}"
+        err = f"인쇄 명령을 찾을 수 없음: {e}"
     except subprocess.CalledProcessError as e:
-        last_error = f"인쇄 실패: {e.stderr.decode(errors='replace')[:200]}"
+        err = f"인쇄 실패: {e.stderr.decode(errors='replace')[:200]}"
     except subprocess.TimeoutExpired:
-        last_error = "인쇄 명령 시간 초과"
-    log.error(last_error)
-    return False
+        err = "인쇄 명령 시간 초과"
+    last_error = err
+    log.error(err)
+    return False, err

@@ -13,7 +13,8 @@ const STATION = (params.get("station") || "A").toUpperCase();
 const IDLE_LIMIT_MS = 90 * 1000; // 어트랙트 자동 복귀 (대기 화면 제외)
 
 let calledSeconds = 12;
-let codeLen = 4; // 서버 /api/config가 quiz.json 코드 길이로 알려줌
+let codeLen = 4;      // 최대 자릿수 (키패드 빈칸 수)
+let codeLens = [4];   // 유효 자릿수 목록 — 혼합 길이 코드 지원
 let introImages = [];
 let introIdx = 0;
 let waitIntroIdx = 0;
@@ -156,9 +157,11 @@ async function pressKey(k) {
   if (code.length >= codeLen) return;
   code += k;
   renderCode();
-  if (code.length === codeLen) await verifyCode();
+  // 유효 자릿수에 도달할 때마다 검증 — 짧은 코드가 맞으면 통과,
+  // 아니면 최대 자릿수까지 계속 입력 받는다 (혼합 길이 대응)
+  if (codeLens.includes(code.length)) await verifyCode(code.length === codeLen);
 }
-async function verifyCode() {
+async function verifyCode(isFinal) {
   try {
     const r = await fetch("/api/code/verify", {
       method: "POST",
@@ -169,7 +172,7 @@ async function verifyCode() {
     if (j.ok) {
       setCodeMsg("정답입니다! 🎉", "ok");
       setTimeout(() => startMaker(), 900);
-    } else {
+    } else if (isFinal) {
       setCodeMsg("코드가 맞지 않아요 — 다시 확인해 주세요", "bad");
       const disp = $("code-display");
       disp.classList.add("error");
@@ -363,7 +366,7 @@ async function complete(dosanFile) {
     }
     const j = await r.json();
     myNumber = j.number;
-    startWait();
+    startWait(j.printed);
   } catch (e) {
     alert("서버 연결을 확인해 주세요");
     show("attract");
@@ -371,8 +374,13 @@ async function complete(dosanFile) {
 }
 
 /* ── ⑥ 대기 (미니게임 · 소개) ── */
-async function startWait() {
+async function startWait(printed = true) {
   $("wait-number").textContent = `No. ${String(myNumber).padStart(3, "0")}`;
+  // 인쇄 실패를 숨기지 않는다 — 스태프 호출 안내 (등록은 유지, 관리 페이지에서 재처리)
+  const banner = document.querySelector(".wait-text");
+  banner.innerHTML = printed
+    ? '🪑 자리에서 기다려 주세요 — <b>띵동!</b> 소리가 나면 도안을 들고 만들기존으로!'
+    : '⚠ <b>도안 인쇄를 확인 중이에요 — 스태프를 불러 주세요!</b> (대기 등록은 완료)';
   selectTab("game");
   exitGame();
   await loadGameMenu();
@@ -489,10 +497,11 @@ function onCalled(number) {
   setTimeout(() => { myNumber = null; show("attract"); }, calledSeconds * 1000);
 }
 
-/* ── WebSocket (자동 재접속) ── */
+/* ── WebSocket (자동 재접속 — 타이머는 하나만 유지) ── */
+let ws = null;
 function connectWS() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  const ws = new WebSocket(`${proto}://${location.host}/ws`);
+  ws = new WebSocket(`${proto}://${location.host}/ws`);
   ws.onmessage = (ev) => {
     let msg;
     try { msg = JSON.parse(ev.data); } catch { return; }
@@ -500,9 +509,8 @@ function connectWS() {
   };
   ws.onclose = () => setTimeout(connectWS, 2000); // 무고장 우선: 끊기면 재접속
   ws.onerror = () => ws.close();
-  // keepalive
-  setInterval(() => { if (ws.readyState === 1) ws.send("ping"); }, 25000);
 }
+setInterval(() => { if (ws && ws.readyState === 1) ws.send("ping"); }, 25000); // keepalive 단일 타이머
 
 /* ── 초기화 ── */
 async function init() {
@@ -512,6 +520,7 @@ async function init() {
     const conf = await (await fetch("/api/config")).json();
     calledSeconds = conf.called_seconds || 12;
     codeLen = conf.code_length || 4;
+    codeLens = conf.code_lengths || [codeLen];
   } catch (e) { /* 기본값 유지 */ }
   try {
     introImages = (await (await fetch("/api/intro")).json()).intro;

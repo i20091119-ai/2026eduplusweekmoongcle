@@ -52,11 +52,16 @@ dosan = [
 ]
 games, game_src = [], {}
 for sub in sorted((ROOT / "content/minigame").iterdir()):
-    if not (sub / "game.json").exists():
+    # 서버(list_minigames)와 동일한 관용 규칙: game.json + index.html 둘 다 있어야 게임
+    if not (sub.is_dir() and (sub / "game.json").exists() and (sub / "index.html").exists()):
         continue
-    meta = json.loads((sub / "game.json").read_text(encoding="utf-8"))
+    try:
+        meta = json.loads((sub / "game.json").read_text(encoding="utf-8"))
+    except Exception:
+        meta = {}
     url = f"/content/minigame/{sub.name}/index.html"
-    games.append({"id": sub.name, "title": meta["title"], "emoji": meta["emoji"],
+    games.append({"id": sub.name, "title": meta.get("title", sub.name),
+                  "emoji": meta.get("emoji", "🎮"),
                   "desc": meta.get("desc", ""), "url": url})
     game_src[url] = (sub / "index.html").read_text(encoding="utf-8")
 
@@ -80,7 +85,7 @@ window.WebSocket = class {{ constructor() {{ this.readyState = 0; }} send() {{}}
 const _json = (data) => Promise.resolve({{ ok: true, status: 200, json: async () => data }});
 window.fetch = (url, opts) => {{
   const u = String(url);
-  if (u.includes("/api/config"))    return _json({{ stations: ["A","B"], called_seconds: 8, brand_color: "#7E212F", code_length: {max(len(c) for c in codes)} }});
+  if (u.includes("/api/config"))    return _json({{ stations: ["A","B"], called_seconds: 8, brand_color: "#7E212F", code_length: {max(len(c) for c in codes)}, code_lengths: {sorted({len(c) for c in codes})} }});
   if (u.includes("/api/intro"))     return _json({{ intro: DEMO.intro }});
   if (u.includes("/api/maker"))     return _json({{ maker: DEMO.maker }});
   if (u.includes("/api/dosan"))     return _json({{ dosan: DEMO.dosan }});

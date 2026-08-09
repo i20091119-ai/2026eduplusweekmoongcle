@@ -143,9 +143,9 @@ function fxText(c){
   const parts = [];
   if (c.fx.h) parts.push(`행복 +${c.fx.h}`);
   if (c.fx.l) parts.push(`호감 +${c.fx.l}`);
+  if (c.fx.u) parts.push(`불행 +${c.fx.u}`); // 복합 효과도 전부 표시 (표기≡실제 효과)
   if (c.tag) parts.push(c.tag);
-  if (c.fx.u) return { text:`불행 +${c.fx.u}`, bad:true };
-  return { text: parts.join(" · ") || "-", bad:false };
+  return { text: parts.join(" · ") || "-", bad: !!c.fx.u && !c.fx.h && !c.fx.l };
 }
 function showDay(){
   if (st.daily) st.money += st.daily;
