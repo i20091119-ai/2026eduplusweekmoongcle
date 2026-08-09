@@ -19,8 +19,8 @@ js = (ROOT / "static/kiosk/kiosk.js").read_text(encoding="utf-8")
 # ── 콘텐츠 수집 ──
 codes = json.loads((ROOT / "content/quiz/quiz.json").read_text(encoding="utf-8"))["codes"]
 maker = {
-    n: json.loads((ROOT / f"content/maker/{n}.json").read_text(encoding="utf-8"))
-    for n in ("personality", "worldcup", "emotion")
+    f.stem: json.loads(f.read_text(encoding="utf-8"))
+    for f in sorted((ROOT / "content/maker").glob("*.json"))
 }
 import base64
 import io
