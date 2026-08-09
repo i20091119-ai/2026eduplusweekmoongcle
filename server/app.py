@@ -45,7 +45,7 @@ def load_codes() -> set[str]:
         return set()
 
 
-DOSAN_EXTS = {".pdf", ".png"}  # PNG 도안은 인쇄 시 B5 페이지로 자동 조판
+DOSAN_EXTS = {".pdf", ".png"}  # PNG 도안은 인쇄 시 A4 결과지로 자동 조판
 
 
 def list_dosan() -> list[dict]:

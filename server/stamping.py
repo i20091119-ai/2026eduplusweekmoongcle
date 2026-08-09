@@ -1,7 +1,7 @@
 """도안 하단 30mm 여백 스탬프 — 좌측 참여번호(브랜드 컬러 블록), 우측 뭉클 QR.
 
-도안 파일 규격 (B5 세로 확정 — 2026-08-09):
-- B5 세로 · PDF · 본문 흑백 라인아트
+도안 파일 규격 (A4 세로 확정 — 2026-08-09, 현장 프린터 A4 고정 운영):
+- A4 세로 · PDF · 본문 흑백 라인아트
 - 하단 여백 30mm 비움 (필수) → 인쇄 직전 시스템이 자동 스탬프
 오버레이는 원본 PDF의 실제 페이지 크기를 따라가므로 A4 도안이 섞여도 안전.
 """
@@ -85,7 +85,7 @@ def _clean(s: str) -> str:
     return " ".join(_EMOJI_RE.sub("", s).split())
 
 
-B5 = (182 * mm, 257 * mm)  # PNG 도안 조판용 페이지 크기 (JIS B5 세로)
+PAGE = (210 * mm, 297 * mm)  # PNG 도안 조판용 페이지 크기 (A4 세로 확정)
 _LOGO = Path(__file__).resolve().parent.parent / "static" / "kiosk" / "logo.png"
 _QR_IMG = Path(__file__).resolve().parent.parent / "static" / "kiosk" / "qr.png"
 # 내장 CID 폰트가 지원하는 문자만 사용 (이모지·화살표 금지)
@@ -120,11 +120,11 @@ def _png_to_pdf(src: Path, meta: dict | None = None) -> bytes:
     title = _clean(meta.get("title") or src.stem)
     line = _clean(meta.get("line") or "")
     note = _clean(meta.get("note") or "")
-    w, h = B5
+    w, h = PAGE
     brand = HexColor(config.BRAND_COLOR)
     moon = HexColor(MOON)
     buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=B5)
+    c = canvas.Canvas(buf, pagesize=PAGE)
 
     # ── 페이지 배경 + 이중 장식 테두리 ──
     c.setFillColor(HexColor(CREAM_PAGE))

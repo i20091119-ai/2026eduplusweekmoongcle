@@ -430,7 +430,7 @@ window.fetch = (url, opts) => {
   }
   return _json({});
 };
-/* ── 데모 자동 인쇄: 결과지(B5 조판)를 숨은 iframe으로 만들어 프린터로 보낸다.
+/* ── 데모 자동 인쇄: 결과지(A4 조판)를 숨은 iframe으로 만들어 프린터로 보낸다.
  * 크롬을 --kiosk-printing 옵션으로 실행하면 대화상자 없이 기본 프린터로 바로 출력. ── */
 function demoDosanImg(path) {
   if (!path) return "";
@@ -457,9 +457,9 @@ function demoPrint() {
   d.write(applyFontUris(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
     @font-face { font-family:"esamanru"; font-weight:400 600; src:url("__FONT_medium__") format("woff2"); }
     @font-face { font-family:"esamanru"; font-weight:700 900; src:url("__FONT_bold__") format("woff2"); }
-    @page { size: 182mm 257mm; margin: 0; }
+    @page { size: 210mm 297mm; margin: 0; }
     * { box-sizing: border-box; }
-    body { margin:0; width:182mm; height:257mm; font-family:"esamanru","Pretendard","Malgun Gothic",sans-serif;
+    body { margin:0; width:210mm; height:297mm; font-family:"esamanru","Pretendard","Malgun Gothic",sans-serif;
       background:#FFFDF6; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .page { position:absolute; inset:5mm 5.5mm; border:1.6pt solid #7E212F; border-radius:5mm;
       display:flex; flex-direction:column; align-items:center; text-align:center; }
@@ -472,17 +472,17 @@ function demoPrint() {
     h1 { font-size:23pt; margin:0 0 3mm; color:#2b2320; }
     .line { display:inline-block; background:#F2C744; color:#7E212F; font-size:10.5pt; font-weight:700;
       border-radius:99px; padding:1.6mm 6mm; margin-bottom:4mm; }
-    .frame { position:relative; width:150mm; height:112mm; border:1.5pt solid #7E212F; border-radius:5mm;
+    .frame { position:relative; width:172mm; height:145mm; border:1.5pt solid #7E212F; border-radius:5mm;
       display:flex; align-items:center; justify-content:center; }
     .frame::before { content:""; position:absolute; inset:2mm; border:1pt dashed #E0B84E; border-radius:3.6mm; }
-    .frame img { max-width:138mm; max-height:100mm; }
-    .notewrap { position:relative; width:150mm; margin-top:6mm; }
+    .frame img { max-width:160mm; max-height:133mm; }
+    .notewrap { position:relative; width:172mm; margin-top:6mm; }
     .chip { position:absolute; top:-3mm; left:50%; transform:translateX(-50%); background:#7E212F; color:#fff;
       font-size:8pt; border-radius:99px; padding:1mm 4.5mm; white-space:nowrap; }
     .note { background:#FBF4E4; border:1px solid #E3CFA8; border-radius:3.5mm;
       font-size:10pt; color:#4a3a30; padding:5mm 7mm 3mm; line-height:1.65; }
     .guide { font-size:7.5pt; color:#a08a70; margin-top:2mm; }
-    .band { margin-top:auto; margin-bottom:2mm; width:158mm; background:#F9EFD7; border-radius:3.5mm;
+    .band { margin-top:auto; margin-bottom:2mm; width:186mm; background:#F9EFD7; border-radius:3.5mm;
       display:flex; justify-content:space-between; align-items:center; padding:3mm 5mm; }
     .num { background:#7E212F; color:#fff; font-size:16pt; font-weight:800; border-radius:3mm; padding:3mm 11mm; }
     .foot { font-size:7pt; color:#b49b78; }
@@ -1279,7 +1279,7 @@ document.getElementById("demo-call").addEventListener("click", () => {
   onCalled(myNumber || DEMO.number);
 });
 /* 데모 인쇄: 실제 부스에서는 서버가 스탬프한 PDF를 프린터로 보낸다.
-   데모에서는 같은 레이아웃(B5 · 하단 번호블록+QR)을 브라우저 인쇄로 재현. */
+   데모에서는 같은 레이아웃(A4 · 하단 번호블록+QR)을 브라우저 인쇄로 재현. */
 document.getElementById("demo-print").addEventListener("click", () => {
   const label = (DEMO.lastDosan || "동물/여우.pdf").split("/").pop().replace(".pdf", "");
   const num = String(myNumber || DEMO.number).padStart(3, "0");

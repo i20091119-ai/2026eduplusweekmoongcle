@@ -14,7 +14,7 @@ server/            FastAPI 서버 — 코드 검증 · 대기열(SQLite) · 스�
 static/kiosk/      키오스크 웹앱 (Q1 · Q2 크로미움 전체화면, ?station=A|B)
 static/admin/      관리 페이지 + 대형 호출 버튼 뷰 (call.html — Q3/노트북/스마트폰 대체용)
 content/           콘텐츠 — 파일 교체만으로 반영, 코드 수정·재시작 불필요
-  ├ dosan/         도안 PDF (B5 세로 · 흑백 라인아트 · 하단 30mm 비움)
+  ├ dosan/         도안 (PNG 권장 · PDF는 A4 세로, 하단 30mm 비움)
   │                 동물/ 음식/ 감정/ 하위 폴더 = 도안 만들기 프로그램별 결과물
   ├ maker/         도안 만들기 프로그램 3종 설정 (personality · worldcup · emotion JSON)
   ├ quiz/          quiz.json — 통과 코드 목록 (현재 4자리 5종 · 몬스터 수와 무관)
@@ -99,7 +99,7 @@ python3 tools/make_sample_dosan.py                    # 샘플 도안 생성 (�
 |---|---|---|
 | `BOOTH_PRINTER` | `booth` | CUPS 프린터 이름 (646Cdw IPP 등록) |
 | `BOOTH_PRINT_DRY_RUN` | `0` | `1`이면 인쇄 생략 (개발·리허설) |
-| `BOOTH_PAPER` | `jis_b5_182x257mm` | 출력 용지 (B5 확정 · A4만 있으면 `A4` — fit-to-page로 자동 맞춤) |
+| `BOOTH_PAPER` | `A4` | 출력 용지 (A4 고정 운영 확정) |
 | `BOOTH_BRAND_COLOR` | `#F5573B` | 참여번호 블록 색 (뭉클 브랜드 컬러로 교체) |
 | `BOOTH_QR_URL` | `https://moongcle.com` | 도안 하단 QR 링크 |
 | `BOOTH_STATIONS` | `A,B` | 스테이션 목록 |

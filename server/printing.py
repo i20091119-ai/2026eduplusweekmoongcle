@@ -51,7 +51,7 @@ def print_pdf(path: Path) -> tuple[bool, str | None]:
         return True, None
     try:
         if platform.system() == "Windows":
-            cmd = [_find_sumatra(), "-print-to-default", "-silent", str(path)]
+            cmd = [_find_sumatra(), "-print-to-default", "-print-settings", "fit", "-silent", str(path)]
         else:
             cmd = [
                 "lp",
@@ -59,7 +59,6 @@ def print_pdf(path: Path) -> tuple[bool, str | None]:
                 "-o", f"print-color-mode={config.PRINT_COLOR_MODE}",
                 "-o", f"media={config.PAPER}",
                 # 용지와 문서 크기가 달라도 멈추지 않고 맞춰 인쇄
-                # (B5 도안 ↔ A4 용지는 비율이 거의 같아 왜곡 없음)
                 "-o", "fit-to-page",
                 str(path),
             ]
