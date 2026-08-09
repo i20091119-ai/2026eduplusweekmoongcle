@@ -96,18 +96,17 @@ def _png_to_pdf(src: Path, meta: dict | None = None) -> bytes:
     c = canvas.Canvas(buf, pagesize=B5)
 
     # ── 헤더: 로고 + 떡집 이름 ──
-    top = h - 12 * mm
+    top = h - 11 * mm
     if _LOGO.exists():
-        ls = 13 * mm
-        c.drawImage(str(_LOGO), w / 2 - ls / 2, top - ls, ls, ls, mask="auto")
-        top -= ls + 3 * mm
-    c.setFillColor(brand)
-    c.setFont(_FONT, 13)
-    c.drawCentredString(w / 2, top, "뭉 클 떡 집")
+        # 로고가 글자 포함 풀 락업이므로 단독 사용 (별도 상호 텍스트 없음)
+        lw_, lh_ = 60 * mm, 20 * mm
+        c.drawImage(str(_LOGO), w / 2 - lw_ / 2, top - lh_, lw_, lh_,
+                    preserveAspectRatio=True, anchor="c", mask="auto")
+        top -= lh_ + 2.5 * mm
     c.setFillColor(HexColor("#8a7666"))
     c.setFont(_FONT, 8.5)
-    c.drawCentredString(w / 2, top - 4.5 * mm, "나만의 클리커 도안 · 에듀플러스위크 2026")
-    top -= 12 * mm
+    c.drawCentredString(w / 2, top, "나만의 클리커 도안 · 에듀플러스위크 2026")
+    top -= 9 * mm
 
     # ── 결과 제목 + 키워드 ──
     c.setFillColor(black)

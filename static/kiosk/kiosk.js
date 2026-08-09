@@ -318,29 +318,44 @@ function runTypeTest(conf) {
   show("maker");
 }
 
-/* 프로그램 2 — 음식 이상형 월드컵 */
+/* 프로그램 2 — 음식 이상형 월드컵
+ * fixedBracket=true면 대진표 순서 그대로 (같은 분류가 1라운드에 안 만나게 설계됨)
+ * 매 경기 승자의 매운맛·기름짐(stats)을 누적해 취향 코멘트를 만든다 */
 function runWorldcup(conf) {
   $("maker-title").textContent = conf.title;
-  let round = [...conf.candidates].sort(() => Math.random() - .5);
+  let round = conf.fixedBracket ? [...conf.candidates]
+    : [...conf.candidates].sort(() => Math.random() - .5);
   let next = [], mi = 0;
+  const picked = [];
   const roundName = n => n === 2 ? "결승" : `${n}강`;
   function match() {
     const a = round[mi], b = round[mi + 1];
     const prog = el("div", "maker-progress",
       `${roundName(round.length)} · ${mi / 2 + 1} / ${round.length / 2}`);
-    const question = el("div", "maker-q", "더 좋아하는 쪽을 클릭!");
+    const question = el("div", "maker-q", "더 끌리는 쪽을 클릭!");
     const choices = el("div", "maker-choices");
-    choices.appendChild(bigChoice(a.emoji, a.name, "", () => pick(a)));
+    choices.appendChild(bigChoice(a.emoji, a.name, a.sub || "", () => pick(a)));
     choices.appendChild(el("span", "vs-badge", "VS"));
-    choices.appendChild(bigChoice(b.emoji, b.name, "", () => pick(b)));
+    choices.appendChild(bigChoice(b.emoji, b.name, b.sub || "", () => pick(b)));
     makerBody(prog, question, choices);
   }
+  function tasteComment() {
+    const withStats = picked.filter(p => p.stats);
+    if (!withStats.length) return "나의 최애 음식 우승!";
+    const avg = key => withStats.reduce((s, p) => s + (p.stats[key] || 0), 0) / withStats.length;
+    const spice = avg("spice"), oil = avg("oil");
+    const t = spice >= 5.5 ? "자극 추구형" : spice <= 2.5 ? "담백 회귀형" : "균형 미식가";
+    return `매운맛 ${spice.toFixed(1)} · 기름짐 ${oil.toFixed(1)} — 당신은 ${t}!`;
+  }
   function pick(winner) {
+    picked.push(winner);
     next.push(winner);
     mi += 2;
     if (mi >= round.length) {
-      if (next.length === 1)
-        return showMakerResult(next[0].emoji, next[0].name, "나의 최애 음식 우승!", next[0].pdf);
+      if (next.length === 1) {
+        const w = next[0];
+        return showMakerResult(w.emoji, w.name, tasteComment(), w.pdf, { why: w.why });
+      }
       round = next; next = []; mi = 0;
     }
     match();

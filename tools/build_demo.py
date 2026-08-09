@@ -85,10 +85,21 @@ for sub in sorted((ROOT / "content/minigame").iterdir()):
     game_src[url] = (sub / "index.html").read_text(encoding="utf-8")
 
 
+def _alpha_thumb_uri(p, size=480):
+    """투명 배경 유지 축소 인라인 (WebP) — 데모 파일 크기 억제."""
+    import io as _io
+    from PIL import Image
+    im = Image.open(p)
+    im.thumbnail((size, size))
+    b = _io.BytesIO()
+    im.save(b, "WEBP", quality=85)
+    return "data:image/webp;base64," + base64.b64encode(b.getvalue()).decode()
+
+
 # 달토끼 캐릭터가 있으면 게임 HTML 안의 경로를 data URI로 인라인 (단일 파일 데모용)
 _char = ROOT / "content/character/달토끼.png"
 if _char.exists():
-    _char_uri = "data:image/png;base64," + base64.b64encode(_char.read_bytes()).decode()
+    _char_uri = _alpha_thumb_uri(_char)
     game_src = {u: h.replace("/content/character/달토끼.png", _char_uri) for u, h in game_src.items()}
 
 
@@ -203,9 +214,8 @@ demo_css = """
 
 body = re.search(r"<body>\n(.*)\n<script src=\"kiosk\.js\"></script>", html, re.S).group(1)
 
-# 로고 PNG 인라인 (단일 파일 데모에는 외부 이미지가 없음)
-logo_b64 = base64.b64encode((ROOT / "static/kiosk/logo.png").read_bytes()).decode()
-body = body.replace('src="logo.png"', 'src="data:image/png;base64,' + logo_b64 + '"')
+# 로고 인라인 (단일 파일 데모에는 외부 이미지가 없음) — 축소 WebP
+body = body.replace('src="logo.png"', 'src="' + _alpha_thumb_uri(ROOT / "static/kiosk/logo.png", 600) + '"')
 
 page = f"""<!DOCTYPE html>
 <html lang="ko">
