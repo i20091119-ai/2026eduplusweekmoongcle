@@ -461,6 +461,10 @@ function demoPrint() {
     * { box-sizing: border-box; }
     body { margin:0; width:210mm; height:297mm; font-family:"esamanru","Pretendard","Malgun Gothic",sans-serif;
       background:#FFFDF6; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .sheet { position:relative; width:210mm; height:297mm; transform-origin:0 0;
+      transform: translateX(210mm) rotate(90deg) scale(0.70710678); }
+    .cut { position:absolute; top:148.5mm; left:6mm; right:6mm; border-top:0.6pt dashed #b9b0a2;
+      text-align:center; color:#b9b0a2; font-size:7pt; }
     .page { position:absolute; inset:5mm 5.5mm; border:1.6pt solid #7E212F; border-radius:5mm;
       display:flex; flex-direction:column; align-items:center; text-align:center; }
     .page::before { content:""; position:absolute; inset:1.4mm; border:1pt dashed #E0B84E; border-radius:4mm; }
@@ -487,7 +491,7 @@ function demoPrint() {
     .num { background:#7E212F; color:#fff; font-size:16pt; font-weight:800; border-radius:3mm; padding:3mm 11mm; }
     .foot { font-size:7pt; color:#b49b78; }
     .qr { font-size:8pt; color:#555; }
-  </style></head><body><div class="page">
+  </style></head><body><div class="sheet"><div class="page">
     <span class="dot" style="left:2mm;top:2mm"></span><span class="dot" style="right:2mm;top:2mm"></span>
     <span class="dot" style="left:2mm;bottom:2mm"></span><span class="dot" style="right:2mm;bottom:2mm"></span>
     ${logo ? `<img class="logo" src="${logo.src}">` : ""}
@@ -500,7 +504,7 @@ function demoPrint() {
     <div class="band"><span class="num">No. ${String(DEMO.number).padStart(3, "0")}</span>
       <span class="foot">뭉클 떡집 · 제17회 에듀플러스위크 미래교육박람회</span>
       <span class="qr">${QR_URI ? `<img src="${QR_URI}" style="height:15mm;display:block;margin:0 auto 1mm">` : ""}뭉클 더 알아보기</span></div>
-  </div></body></html>`));
+  </div></div><div class="cut"><span>-- 여기를 따라 잘라 주세요 --</span></div></body></html>`));
   d.close();
   // 이미지·서체 로딩이 끝난 뒤 인쇄 (안 그러면 빈 칸으로 찍힘)
   setTimeout(async () => {
@@ -1250,6 +1254,13 @@ setInterval(() => { if (ws && ws.readyState === 1) ws.send("ping"); }, 25000); /
 
 /* ── 초기화 ── */
 async function init() {
+  // 스테이션 표시 (왼쪽 아래 작게) — 두 화면이 같은 스테이션으로 열리는 사고 방지용
+  const st = document.createElement("div");
+  st.textContent = STATION;
+  st.style.cssText = "position:fixed;left:14px;bottom:12px;z-index:30;pointer-events:none;" +
+    "font-size:15px;font-weight:800;color:rgba(61,39,35,.4);background:rgba(255,255,255,.35);" +
+    "border-radius:8px;padding:2px 9px";
+  document.body.appendChild(st);
   buildKeypad();
   applyUiSlots();
   connectWS();

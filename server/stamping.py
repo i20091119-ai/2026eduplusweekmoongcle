@@ -244,11 +244,48 @@ def _png_to_pdf(src: Path, meta: dict | None = None) -> bytes:
     return buf.getvalue()
 
 
+def _cut_guide() -> bytes:
+    """A4 가운데 자르는 선 (half 배치용) — 회색 점선 + 안내 문구."""
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=PAGE)
+    w, h = PAGE
+    c.setStrokeColor(HexColor("#b9b0a2"))
+    c.setLineWidth(0.6)
+    c.setDash(4, 4)
+    c.line(6 * mm, h / 2, w - 6 * mm, h / 2)
+    c.setDash()
+    c.setFillColor(HexColor("#b9b0a2"))
+    c.setFont(_FONT, 7)
+    c.drawCentredString(w / 2, h / 2 - 4 * mm, "-- 여기를 따라 잘라 주세요 --")
+    c.save()
+    return buf.getvalue()
+
+
+def _to_half_a4(page):
+    """완성된 페이지를 A4 위쪽 절반에 가로로 눕혀 절반 크기(A5)로 배치.
+
+    A계열 용지 특성상 축척 1/√2 + 90° 회전이 정확히 절반 면에 들어맞는다.
+    반으로 자르면 A5 결과지가 된다 (용지 절약 · 현장 요청 2026-08-09).
+    """
+    from pypdf import Transformation
+
+    pw, ph = float(page.mediabox.width), float(page.mediabox.height)
+    a4w, a4h = float(PAGE[0]), float(PAGE[1])
+    s = min(a4w / ph, (a4h / 2) / pw)  # 회전 후 가로=원본 세로, 세로=원본 가로
+    page.add_transformation(
+        Transformation().scale(s).rotate(90).translate(tx=ph * s, ty=a4h - pw * s)
+    )
+    page.mediabox.lower_left = (0, 0)
+    page.mediabox.upper_right = (a4w, a4h)
+    page.merge_page(PdfReader(io.BytesIO(_cut_guide())).pages[0])
+
+
 def stamp_pdf(src: Path, number: int, dst: Path, meta: dict | None = None) -> Path:
     """src 도안(PDF 또는 PNG)의 첫 페이지에 스탬프를 합성해 dst로 저장.
 
     PNG는 결과지 템플릿으로 조판(meta: title·line·note 반영),
     PDF는 디자이너가 만든 페이지 그대로 스탬프만 찍는다.
+    BOOTH_PRINT_LAYOUT=half(기본)면 A4 위쪽 절반에 A5 크기로 배치.
     """
     if src.suffix.lower() == ".png":
         reader = PdfReader(io.BytesIO(_png_to_pdf(src, meta)))
@@ -262,6 +299,8 @@ def stamp_pdf(src: Path, number: int, dst: Path, meta: dict | None = None) -> Pa
     for i, page in enumerate(reader.pages):
         if i == 0:
             page.merge_page(overlay_page)
+            if config.PRINT_LAYOUT == "half":
+                _to_half_a4(page)
         writer.add_page(page)
     dst.parent.mkdir(parents=True, exist_ok=True)
     with open(dst, "wb") as f:

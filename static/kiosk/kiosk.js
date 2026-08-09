@@ -728,6 +728,13 @@ setInterval(() => { if (ws && ws.readyState === 1) ws.send("ping"); }, 25000); /
 
 /* ── 초기화 ── */
 async function init() {
+  // 스테이션 표시 (왼쪽 아래 작게) — 두 화면이 같은 스테이션으로 열리는 사고 방지용
+  const st = document.createElement("div");
+  st.textContent = STATION;
+  st.style.cssText = "position:fixed;left:14px;bottom:12px;z-index:30;pointer-events:none;" +
+    "font-size:15px;font-weight:800;color:rgba(61,39,35,.4);background:rgba(255,255,255,.35);" +
+    "border-radius:8px;padding:2px 9px";
+  document.body.appendChild(st);
   buildKeypad();
   applyUiSlots();
   connectWS();

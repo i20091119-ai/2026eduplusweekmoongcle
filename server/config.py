@@ -13,6 +13,8 @@ DB_PATH = DATA_DIR / "booth.db"
 PRINTER_NAME = os.environ.get("BOOTH_PRINTER", "booth")
 # 용지 — A4 고정 운영 확정 (2026-08-09). 결과지 조판도 A4라 그대로 출력됨
 PAPER = os.environ.get("BOOTH_PAPER", "A4")
+# 인쇄 배치 — half: A4 위쪽 절반에 A5 크기로 (반으로 잘라 사용, 용지 절약) · full: A4 꽉 채움
+PRINT_LAYOUT = os.environ.get("BOOTH_PRINT_LAYOUT", "half")
 # 설계명세서 4장: 본문은 흑백 라인아트, 번호 블록만 브랜드 컬러 → 컬러 모드로 보내되 원본이 흑백
 PRINT_COLOR_MODE = os.environ.get("BOOTH_PRINT_COLOR_MODE", "color")
 # 개발/리허설용: 1이면 실제 인쇄 대신 로그만 남기고 data/printed/ 에 PDF 보관
