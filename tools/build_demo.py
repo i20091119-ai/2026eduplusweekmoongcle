@@ -196,9 +196,9 @@ demo_css = """
 
 body = re.search(r"<body>\n(.*)\n<script src=\"kiosk\.js\"></script>", html, re.S).group(1)
 
-# 로고 SVG 인라인 (단일 파일 데모에는 외부 이미지가 없음)
-logo_svg = (ROOT / "static/kiosk/logo.svg").read_text(encoding="utf-8")
-body = body.replace('src="logo.svg"', 'src="data:image/svg+xml;utf8,' + quote(logo_svg) + '"')
+# 로고 PNG 인라인 (단일 파일 데모에는 외부 이미지가 없음)
+logo_b64 = base64.b64encode((ROOT / "static/kiosk/logo.png").read_bytes()).decode()
+body = body.replace('src="logo.png"', 'src="data:image/png;base64,' + logo_b64 + '"')
 
 page = f"""<!DOCTYPE html>
 <html lang="ko">
