@@ -4,8 +4,13 @@
 <meta charset="utf-8">
 <title>쿵덕쿵덕 떡메치기</title>
 <style>
+/* 브랜드 서체: esamanru — /kiosk/fonts/ 의 woff2 교체로 변경 */
+@font-face { font-family:"esamanru"; font-weight:300; font-display:swap; src:url("/kiosk/fonts/esamanru-light.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:400 600; font-display:swap; src:url("/kiosk/fonts/esamanru-medium.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:700 900; font-display:swap; src:url("/kiosk/fonts/esamanru-bold.woff2") format("woff2"); }
+
 /* 타이밍 게임 — 게이지가 왕복, 노란 구간에서 화면 아무 데나 클릭 (트랙볼 조준 불필요) */
-* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
+* { margin:0; padding:0; box-sizing:border-box; font-family:"esamanru","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
 html,body { width:100%; height:100%; overflow:hidden; }
 body { background:#ACD6E8; display:flex; flex-direction:column; align-items:center; cursor:pointer; }
 header { display:flex; gap:34px; padding:12px; font-size:24px; font-weight:800; color:#7E212F; }
@@ -53,6 +58,14 @@ const $ = id => document.getElementById(id);
   img.src = "/content/character/달토끼.png";
   img.onload = () => { const r = $("rabbit"); r.textContent = ""; r.appendChild(img); };
 })();
+// 절구 이미지 슬롯: assets/절구.png — 있으면 이모지 대신, 상태 텍스트 변경도 중단
+let mortarImg = false;
+(function(){
+  const img = new Image();
+  img.src = "assets/절구.png";
+  img.onload = () => { mortarImg = true; const m = $("mortar"); m.textContent = ""; img.style.height = "95px"; m.appendChild(img); };
+})();
+function setMortar(t){ if (!mortarImg) $("mortar").textContent = t; }
 const W = 640, TOTAL = 15;
 let round = 1, score = 0, x = 0, dir = 1, speed = 4.2, playing = false, raf = null, lock = false;
 let goodW = 150, perfW = 56;
@@ -92,9 +105,9 @@ document.body.addEventListener("click", () => {
   $("rabbit").classList.add("pound");
   document.body.classList.add("shake");
   setTimeout(() => { $("rabbit").classList.remove("pound"); document.body.classList.remove("shake"); }, 180);
-  if (d <= perfW / 2){ score += 2; fb.textContent = "쿵덕!! 완벽 +2"; fb.className = "perfect"; $("mortar").textContent = "🥣✨"; }
-  else if (d <= goodW / 2){ score += 1; fb.textContent = "쿵! 좋아 +1"; fb.className = ""; $("mortar").textContent = "🥣"; }
-  else { fb.textContent = "철푸덕… 빗나감"; fb.className = "miss"; $("mortar").textContent = "🥣💦"; }
+  if (d <= perfW / 2){ score += 2; fb.textContent = "쿵덕!! 완벽 +2"; fb.className = "perfect"; setMortar("🥣✨"); }
+  else if (d <= goodW / 2){ score += 1; fb.textContent = "쿵! 좋아 +1"; fb.className = ""; setMortar("🥣"); }
+  else { fb.textContent = "철푸덕… 빗나감"; fb.className = "miss"; setMortar("🥣💦"); }
   hud();
   round++;
   // 갈수록 빨라지고 구간이 좁아진다

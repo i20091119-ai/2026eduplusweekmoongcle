@@ -117,6 +117,8 @@ def list_minigames() -> list[dict]:
                 "emoji": meta.get("emoji", "🎮"),
                 "desc": meta.get("desc", ""),
                 "url": f"/content/minigame/{sub.name}/index.html",
+                # 폴더에 icon.png를 넣으면 메뉴 카드 아이콘이 교체됨
+                "icon": f"/content/minigame/{sub.name}/icon.png" if (sub / "icon.png").exists() else None,
             })
     return games
 
@@ -249,15 +251,14 @@ async def complete(body: CompleteIn):
     # 좌석 확인 후에 번호 발급 (중복 시도로 번호가 소모되지 않도록)
     if queue_db.station_waiting(body.station):
         raise HTTPException(409, "이 자리는 이미 대기 중입니다")
-    number = queue_db.next_number()
-    if not queue_db.enqueue(body.station, number, body.dosan):
-        raise HTTPException(409, "이 자리는 이미 대기 중입니다")
-
     meta = {
         "title": (body.title or "").strip()[:60],
         "line": (body.line or "").strip()[:80],
         "note": (body.note or "").strip()[:400],
     }
+    number = queue_db.next_number()
+    if not queue_db.enqueue(body.station, number, body.dosan, json.dumps(meta, ensure_ascii=False)):
+        raise HTTPException(409, "이 자리는 이미 대기 중입니다")
 
     # 스탬프 + 인쇄는 스레드에서 (이벤트 루프 비차단) — 결과는 요청별로 격리
     def _stamp_and_print() -> tuple[bool, str | None]:
@@ -313,6 +314,39 @@ async def admin_reset(body: StationIn):
     return {"ok": True, "reset": n}
 
 
+class ReprintIn(BaseModel):
+    number: int
+    dosan: str
+
+
+@app.post("/api/admin/reprint")
+async def admin_reprint(body: ReprintIn):
+    """인쇄 오류 시 재인쇄 — 발급 기록의 번호·도안·결과지 메타 그대로 다시 인쇄."""
+    src = resolve_dosan(body.dosan)
+    if src is None:
+        raise HTTPException(404, "도안 파일 없음")
+    meta = {}
+    for row in queue_db.recent(50):
+        if row["number"] == body.number and row["dosan"] == body.dosan:
+            try:
+                meta = json.loads(row.get("meta") or "{}")
+            except Exception:
+                meta = {}
+            break
+
+    def _do() -> tuple[bool, str | None]:
+        out = config.DATA_DIR / "printed" / f"{queue_db.today()}_{body.number:03d}_re.pdf"
+        try:
+            stamping.stamp_pdf(src, body.number, out, meta)
+        except Exception as e:
+            return False, f"스탬프 실패: {e}"
+        return printing.print_pdf(out)
+
+    printed, err = await asyncio.to_thread(_do)
+    log.info("재인쇄 No.%03d %s → %s", body.number, body.dosan, "성공" if printed else err)
+    return {"ok": printed, "print_error": err}
+
+
 @app.get("/api/status")
 def get_status():
     s = queue_db.status()
@@ -320,6 +354,7 @@ def get_status():
     s["dosan_count"] = len(list_dosan())
     s["code_count"] = len(load_codes())
     s["minigame_count"] = len(list_minigames())
+    s["recent"] = queue_db.recent(8)
     return s
 
 
@@ -334,9 +369,11 @@ def index():
 (config.CONTENT_DIR / "minigame").mkdir(parents=True, exist_ok=True)
 (config.CONTENT_DIR / "dosan").mkdir(parents=True, exist_ok=True)
 (config.CONTENT_DIR / "character").mkdir(parents=True, exist_ok=True)
+(config.CONTENT_DIR / "ui").mkdir(parents=True, exist_ok=True)
 app.mount("/content/intro", StaticFiles(directory=config.CONTENT_DIR / "intro"), name="intro")
 app.mount("/content/minigame", StaticFiles(directory=config.CONTENT_DIR / "minigame"), name="minigame")
 app.mount("/content/dosan", StaticFiles(directory=config.CONTENT_DIR / "dosan"), name="dosan")  # 결과 화면 미리보기용
 app.mount("/content/character", StaticFiles(directory=config.CONTENT_DIR / "character"), name="character")  # 달토끼 등 캐릭터
+app.mount("/content/ui", StaticFiles(directory=config.CONTENT_DIR / "ui"), name="ui")  # 버튼·아이콘·배경 이미지 슬롯
 app.mount("/admin", StaticFiles(directory=config.STATIC_DIR / "admin", html=True), name="admin")
 app.mount("/kiosk", StaticFiles(directory=config.STATIC_DIR / "kiosk", html=True), name="kiosk")

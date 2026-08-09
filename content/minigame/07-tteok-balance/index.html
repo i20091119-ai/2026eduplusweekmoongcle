@@ -4,9 +4,14 @@
 <meta charset="utf-8">
 <title>기우뚱 떡시루</title>
 <style>
+/* 브랜드 서체: esamanru — /kiosk/fonts/ 의 woff2 교체로 변경 */
+@font-face { font-family:"esamanru"; font-weight:300; font-display:swap; src:url("/kiosk/fonts/esamanru-light.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:400 600; font-display:swap; src:url("/kiosk/fonts/esamanru-medium.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:700 900; font-display:swap; src:url("/kiosk/fonts/esamanru-bold.woff2") format("woff2"); }
+
 /* 균형 저울 게임의 '실시간 기울기 피드백' + 그램수 표시 버전 —
  * 등식은 없지만 떡마다 무게(g)와 양쪽 합계를 보여줘서 조합 퍼즐로 푼다. 클릭만으로 조작. */
-* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
+* { margin:0; padding:0; box-sizing:border-box; font-family:"esamanru","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
 html,body { width:100%; height:100%; overflow:hidden; }
 body { background:#FFF9EF; display:flex; flex-direction:column; align-items:center; }
 header { display:flex; gap:30px; padding:12px; font-size:24px; font-weight:800; color:#7E212F; }
@@ -63,7 +68,17 @@ header { display:flex; gap:30px; padding:12px; font-size:24px; font-weight:800; 
 <div id="overlay"><h1 id="ov-title">기우뚱 떡시루</h1><p id="ov-sub" style="font-size:26px">숫자 없이 눈대중으로! 저울을 수평으로 만들어요</p><button onclick="start()">시작!</button></div>
 <script>
 "use strict";
+/* 이미지 슬롯: assets/떡1.png ~ 떡6.png — 없으면 이모지 */
 const EMOJIS = ["🍡","🥮","🍚","🌕","🧁","🥯"];
+const FACE = EMOJIS.map(() => null);
+EMOJIS.forEach((_, i) => {
+  const im = new Image();
+  im.src = `assets/떡${i + 1}.png`;
+  im.onload = () => { FACE[i] = im.src; };
+});
+function face(ei, px){
+  return FACE[ei] ? `<img src="${FACE[ei]}" style="height:${px}px">` : `<span style="font-size:${px}px">${EMOJIS[ei]}</span>`;
+}
 const $ = id => document.getElementById(id);
 let leftItems = [], tray = [], right = [], round = 1, time = 90, tick = null, playing = false, uid = 0, ended = false;
 
@@ -83,7 +98,7 @@ function hud(){
   $("round").textContent = `${round} / 5판`;
 }
 function item(w){
-  return { id: uid++, w, e: EMOJIS[Math.floor(Math.random() * EMOJIS.length)] };
+  return { id: uid++, w, ei: Math.floor(Math.random() * EMOJIS.length) };
 }
 function newRound(){
   hud();
@@ -109,7 +124,7 @@ function grams(w){ return (w * 100) + "g"; }
 function tteokEl(t, tag){
   const s = document.createElement(tag);
   s.className = "t";
-  s.innerHTML = `<span style="font-size:${fontFor(t.w)}">${t.e}</span><small>${grams(t.w)}</small>`;
+  s.innerHTML = `${face(t.ei, parseInt(fontFor(t.w)))}<small>${grams(t.w)}</small>`;
   return s;
 }
 function render(){
@@ -124,7 +139,7 @@ function render(){
   }
   for (const t of tray){
     const b = document.createElement("button");
-    b.innerHTML = `<span style="font-size:${fontFor(t.w)}">${t.e}</span><br><small>${grams(t.w)}</small>`;
+    b.innerHTML = `${face(t.ei, parseInt(fontFor(t.w)))}<br><small>${grams(t.w)}</small>`;
     b.addEventListener("click", () => { if (!playing) return; tray = tray.filter(x => x.id !== t.id); right.push(t); render(); });
     tr.appendChild(b);
   }

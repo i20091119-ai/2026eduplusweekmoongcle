@@ -16,12 +16,20 @@ from reportlab.lib.colors import HexColor, black, white
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
 from . import config
 
-_FONT = "HYGothic-Medium"  # reportlab 내장 한글 CID 폰트
-pdfmetrics.registerFont(UnicodeCIDFont(_FONT))
+# 브랜드 서체(esamanru) TTF가 있으면 결과지도 같은 서체로 — 없으면 내장 CID 폰트
+_FONTS_DIR = Path(__file__).resolve().parent.parent / "static" / "kiosk" / "fonts"
+try:
+    pdfmetrics.registerFont(TTFont("esamanru", str(_FONTS_DIR / "esamanru-medium.ttf")))
+    pdfmetrics.registerFont(TTFont("esamanru-bold", str(_FONTS_DIR / "esamanru-bold.ttf")))
+    _FONT, _FONT_BOLD = "esamanru", "esamanru-bold"
+except Exception:
+    _FONT = _FONT_BOLD = "HYGothic-Medium"  # reportlab 내장 한글 CID 폰트
+    pdfmetrics.registerFont(UnicodeCIDFont(_FONT))
 
 
 def _overlay(number: int, pagesize: tuple[float, float]) -> bytes:
@@ -36,7 +44,7 @@ def _overlay(number: int, pagesize: tuple[float, float]) -> bytes:
     c.setFillColor(HexColor(config.BRAND_COLOR))
     c.roundRect(bx, by, block_w, block_h, 3 * mm, stroke=0, fill=1)
     c.setFillColor(white)
-    c.setFont(_FONT, 22)
+    c.setFont(_FONT_BOLD, 22)
     c.drawCentredString(bx + block_w / 2, by + 4.5 * mm, f"No. {number:03d}")
     c.setFillColor(black)
     c.setFont(_FONT, 8)
@@ -59,6 +67,18 @@ def _overlay(number: int, pagesize: tuple[float, float]) -> bytes:
 
     c.save()
     return buf.getvalue()
+
+
+import re as _re
+
+# 인쇄 서체(한글 전용)에 없는 이모지·기호는 □로 찍히므로 제거
+_EMOJI_RE = _re.compile(
+    "[\U0001F000-\U0001FAFF\U0001FB00-\U0001FFFF☀-➿⬀-⯿️‍✨]+"
+)
+
+
+def _clean(s: str) -> str:
+    return " ".join(_EMOJI_RE.sub("", s).split())
 
 
 B5 = (182 * mm, 257 * mm)  # PNG 도안 조판용 페이지 크기 (JIS B5 세로)
@@ -87,9 +107,9 @@ def _png_to_pdf(src: Path, meta: dict | None = None) -> bytes:
     """PNG 도안을 '결과지' 페이지로 조판 — 떡집 헤더 + 결과 제목·키워드 +
     도안 프레임 + 설명·색칠 가이드. 하단 30mm는 스탬프 영역으로 비움."""
     meta = meta or {}
-    title = meta.get("title") or src.stem
-    line = meta.get("line") or ""
-    note = meta.get("note") or ""
+    title = _clean(meta.get("title") or src.stem)
+    line = _clean(meta.get("line") or "")
+    note = _clean(meta.get("note") or "")
     w, h = B5
     brand = HexColor(config.BRAND_COLOR)
     buf = io.BytesIO()
@@ -110,7 +130,7 @@ def _png_to_pdf(src: Path, meta: dict | None = None) -> bytes:
 
     # ── 결과 제목 + 키워드 ──
     c.setFillColor(black)
-    c.setFont(_FONT, 24)
+    c.setFont(_FONT_BOLD, 24)
     c.drawCentredString(w / 2, top, title)
     top -= 8 * mm
     if line:

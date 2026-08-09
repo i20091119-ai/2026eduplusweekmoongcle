@@ -4,7 +4,12 @@
 <meta charset="utf-8">
 <title>다른 몬스터 찾기</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
+/* 브랜드 서체: esamanru — /kiosk/fonts/ 의 woff2 교체로 변경 */
+@font-face { font-family:"esamanru"; font-weight:300; font-display:swap; src:url("/kiosk/fonts/esamanru-light.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:400 600; font-display:swap; src:url("/kiosk/fonts/esamanru-medium.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:700 900; font-display:swap; src:url("/kiosk/fonts/esamanru-bold.woff2") format("woff2"); }
+
+* { margin:0; padding:0; box-sizing:border-box; font-family:"esamanru","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
 html,body { width:100%; height:100%; overflow:hidden; }
 body { background:#F3ECFF; display:flex; flex-direction:column; align-items:center; }
 header { display:flex; gap:36px; padding:14px; font-size:26px; font-weight:800; color:#5a3a8a; }

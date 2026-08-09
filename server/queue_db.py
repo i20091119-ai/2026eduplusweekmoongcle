@@ -52,6 +52,10 @@ def _db():
 def init():
     with _db() as con:
         con.executescript(_SCHEMA)
+        try:  # 재인쇄용 결과지 메타 (기존 DB 마이그레이션)
+            con.execute("ALTER TABLE queue ADD COLUMN meta TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
 
 
 def next_number() -> int:
@@ -76,7 +80,7 @@ def station_waiting(station: str) -> bool:
         ).fetchone() is not None
 
 
-def enqueue(station: str, number: int, dosan: str) -> bool:
+def enqueue(station: str, number: int, dosan: str, meta: str = "") -> bool:
     """스테이션을 대기열에 등록. 이미 대기 중이면 False (좌석당 1명 원칙)."""
     with _db() as con:
         dup = con.execute(
@@ -86,11 +90,24 @@ def enqueue(station: str, number: int, dosan: str) -> bool:
         if dup:
             return False
         con.execute(
-            "INSERT INTO queue(day, station, number, dosan, status, created_at) "
-            "VALUES(?,?,?,?, 'waiting', ?)",
-            (today(), station, number, dosan, _now()),
+            "INSERT INTO queue(day, station, number, dosan, status, created_at, meta) "
+            "VALUES(?,?,?,?, 'waiting', ?, ?)",
+            (today(), station, number, dosan, _now(), meta),
         )
         return True
+
+
+def recent(limit: int = 8) -> list[dict]:
+    """오늘 발급된 최근 항목 — 재인쇄용 (번호·도안·메타)."""
+    with _db() as con:
+        return [
+            dict(r)
+            for r in con.execute(
+                "SELECT number, station, dosan, meta, status FROM queue "
+                "WHERE day = ? ORDER BY id DESC LIMIT ?",
+                (today(), limit),
+            )
+        ]
 
 
 def call_next() -> dict | None:

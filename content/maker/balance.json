@@ -25,82 +25,114 @@
     {
       "axis": 0,
       "a": "한 번도 안 먹어본 신메뉴 도전",
-      "b": "늘 먹던 최애 메뉴 또 먹기"
+      "b": "늘 먹던 최애 메뉴 또 먹기",
+      "aImg": "/content/ui/밸런스/q01_a.png",
+      "bImg": "/content/ui/밸런스/q01_b.png"
     },
     {
       "axis": 0,
       "a": "처음 가보는 곳으로 여행",
-      "b": "좋아하는 곳 한 번 더 가기"
+      "b": "좋아하는 곳 한 번 더 가기",
+      "aImg": "/content/ui/밸런스/q02_a.png",
+      "bImg": "/content/ui/밸런스/q02_b.png"
     },
     {
       "axis": 0,
       "a": "새 학기, 새로운 짝꿍 두근두근",
-      "b": "원래 짝꿍 그대로가 편해"
+      "b": "원래 짝꿍 그대로가 편해",
+      "aImg": "/content/ui/밸런스/q03_a.png",
+      "bImg": "/content/ui/밸런스/q03_b.png"
     },
     {
       "axis": 0,
       "a": "롤러코스터 맨 앞자리!",
-      "b": "회전목마 여유롭게~"
+      "b": "회전목마 여유롭게~",
+      "aImg": "/content/ui/밸런스/q04_a.png",
+      "bImg": "/content/ui/밸런스/q04_b.png"
     },
     {
       "axis": 0,
       "a": "즉석 무대에서 장기자랑",
-      "b": "관객석에서 열심히 응원"
+      "b": "관객석에서 열심히 응원",
+      "aImg": "/content/ui/밸런스/q05_a.png",
+      "bImg": "/content/ui/밸런스/q05_b.png"
     },
     {
       "axis": 0,
       "a": "지도에 없는 샛길 탐험",
-      "b": "안내판 있는 산책로 따라"
+      "b": "안내판 있는 산책로 따라",
+      "aImg": "/content/ui/밸런스/q06_a.png",
+      "bImg": "/content/ui/밸런스/q06_b.png"
     },
     {
       "axis": 1,
       "a": "시끌벅적 다 같이 보드게임",
-      "b": "조용히 혼자 퍼즐 게임"
+      "b": "조용히 혼자 퍼즐 게임",
+      "aImg": "/content/ui/밸런스/q07_a.png",
+      "bImg": "/content/ui/밸런스/q07_b.png"
     },
     {
       "axis": 1,
       "a": "친구들과 우르르 점심 먹기",
-      "b": "혼자 여유롭게 점심 즐기기"
+      "b": "혼자 여유롭게 점심 즐기기",
+      "aImg": "/content/ui/밸런스/q08_a.png",
+      "bImg": "/content/ui/밸런스/q08_b.png"
     },
     {
       "axis": 1,
       "a": "모둠 활동으로 아이디어 팡팡",
-      "b": "혼자 몰입해서 뚝딱 완성"
+      "b": "혼자 몰입해서 뚝딱 완성",
+      "aImg": "/content/ui/밸런스/q09_a.png",
+      "bImg": "/content/ui/밸런스/q09_b.png"
     },
     {
       "axis": 1,
       "a": "주말엔 약속으로 꽉꽉!",
-      "b": "주말엔 집콕으로 충전"
+      "b": "주말엔 집콕으로 충전",
+      "aImg": "/content/ui/밸런스/q10_a.png",
+      "bImg": "/content/ui/밸런스/q10_b.png"
     },
     {
       "axis": 1,
       "a": "고민은 바로 수다로 풀기",
-      "b": "일기장에 차분히 정리하기"
+      "b": "일기장에 차분히 정리하기",
+      "aImg": "/content/ui/밸런스/q11_a.png",
+      "bImg": "/content/ui/밸런스/q11_b.png"
     },
     {
       "axis": 2,
       "a": "여행지에서 발길 닿는 대로",
-      "b": "여행 시간표대로 알차게"
+      "b": "여행 시간표대로 알차게",
+      "aImg": "/content/ui/밸런스/q12_a.png",
+      "bImg": "/content/ui/밸런스/q12_b.png"
     },
     {
       "axis": 2,
       "a": "옷은 그날 아침 기분대로",
-      "b": "옷은 전날 밤에 미리 준비"
+      "b": "옷은 전날 밤에 미리 준비",
+      "aImg": "/content/ui/밸런스/q13_a.png",
+      "bImg": "/content/ui/밸런스/q13_b.png"
     },
     {
       "axis": 2,
       "a": "방학숙제는 마지막에 몰아서",
-      "b": "방학숙제는 첫 주에 끝!"
+      "b": "방학숙제는 첫 주에 끝!",
+      "aImg": "/content/ui/밸런스/q14_a.png",
+      "bImg": "/content/ui/밸런스/q14_b.png"
     },
     {
       "axis": 2,
       "a": "게임 규칙은 하면서 익히기",
-      "b": "설명서 정독하고 시작하기"
+      "b": "설명서 정독하고 시작하기",
+      "aImg": "/content/ui/밸런스/q15_a.png",
+      "bImg": "/content/ui/밸런스/q15_b.png"
     },
     {
       "axis": 2,
       "a": "저녁 메뉴는 그때그때 결정",
-      "b": "일주일 식단표가 든든해"
+      "b": "일주일 식단표가 든든해",
+      "aImg": "/content/ui/밸런스/q16_a.png",
+      "bImg": "/content/ui/밸런스/q16_b.png"
     }
   ],
   "results": {
@@ -160,5 +192,6 @@
       "why": "혼자만의 시간에 차곡차곡 기록을 쌓는 당신은 꼼꼼한 관측 학자군요. 그런 당신에게는 별 망원경이 어울려요. 달의 비밀은 매일 밤 같은 자리에서 하늘을 기록한 사람이 가장 먼저 알아내거든요.",
       "pdf": "탐험/별망원경.png"
     }
-  }
+  },
+  "icon": "/content/ui/아이콘_밸런스.png"
 }

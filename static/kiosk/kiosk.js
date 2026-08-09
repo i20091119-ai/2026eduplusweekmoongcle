@@ -24,6 +24,46 @@ let idleTimer = null;
 
 const $ = (id) => document.getElementById(id);
 const screens = ["attract", "intro", "code", "maker", "printing", "wait", "called", "buzzer"];
+
+/* ── UI 이미지 슬롯: content/ui/에 파일을 넣으면 자동 교체, 없으면 기본 디자인 ──
+ * 전체 슬롯 목록은 docs/디자인명세서.pdf 12장 참조 */
+function slotImg(url, apply) {
+  if (!url) return;
+  const im = new Image();
+  im.src = url;
+  im.onload = () => apply(im);
+}
+function imageButton(btn, url, height) {
+  slotImg(url, im => {
+    im.style.height = height + "px";
+    btn.classList.add("img-btn");
+    btn.textContent = "";
+    btn.appendChild(im);
+  });
+}
+function applyUiSlots() {
+  imageButton($("btn-start"), "/content/ui/버튼_시작하기.png", 120);
+  imageButton($("btn-attract-intro"), "/content/ui/버튼_뭉클알아보기.png", 76);
+  imageButton($("btn-to-code"), "/content/ui/버튼_코드입력하러가기.png", 76);
+  imageButton($("tab-game"), "/content/ui/탭_미니게임.png", 62);
+  imageButton($("tab-intro"), "/content/ui/탭_뭉클이야기.png", 62);
+  slotImg("/content/ui/배경_어트랙트.png", im => {
+    $("screen-attract").style.background = `url(${im.src}) center / cover no-repeat`;
+  });
+  slotImg("/content/ui/배경_코드입력.png", im => {
+    $("screen-code").style.background = `url(${im.src}) center / cover no-repeat`;
+  });
+  slotImg("/content/ui/키패드_키.png", im => {
+    const st = document.createElement("style");
+    st.textContent = `.keypad button { background: url(${im.src}) center / 100% 100% no-repeat; box-shadow: none; }`;
+    document.head.appendChild(st);
+  });
+  slotImg("/content/character/달토끼.png", im => {
+    im.className = "code-rabbit-img";
+    $("code-rabbit").textContent = "";
+    $("code-rabbit").appendChild(im);
+  });
+}
 let current = "attract";
 
 function show(name) {
@@ -122,13 +162,13 @@ function buildCodeDisplay() {
     s.className = "digit";
     disp.appendChild(s);
   }
-  $("code-title").textContent = `몬스터가 알려준 ${codeLen}자리 코드를 입력하세요`;
+  $("code-title").textContent = `떡몬스터가 알려준 ${codeLen}자리 코드를 입력하세요`;
 }
 function startCode() {
   code = "";
   buildCodeDisplay();
   renderCode();
-  setCodeMsg("스마트폰으로 몬스터에 접촉해 퀴즈를 풀면 코드를 받아요 📱", "");
+  setCodeMsg("스마트폰으로 떡몬스터에 접촉해 퀴즈를 풀면 코드를 받아요 📱", "");
   show("code");
 }
 function renderCode() {
@@ -200,10 +240,15 @@ function el(tag, cls, html) {
   if (html !== undefined) e.innerHTML = html;
   return e;
 }
-function bigChoice(emoji, label, sub, onclick) {
+function bigChoice(emoji, label, sub, onclick, iconUrl) {
   const b = document.createElement("button");
   b.innerHTML = (emoji ? `<span class="c-emoji">${emoji}</span>` : "") +
     `<span>${label}</span>` + (sub ? `<span class="m-desc">${sub}</span>` : "");
+  if (iconUrl) slotImg(iconUrl, im => {  // 이미지가 있으면 이모지 대신 아이콘
+    im.className = "c-icon";
+    const e = b.querySelector(".c-emoji");
+    if (e) e.replaceWith(im); else b.prepend(im);
+  });
   b.addEventListener("click", () => { clickBeep(); onclick(); });
   return b;
 }
@@ -228,6 +273,10 @@ async function startMaker() {
     const b = document.createElement("button");
     b.innerHTML = `<span class="m-emoji">${conf.emoji || "🎨"}</span>` +
       `<span>${conf.title}</span><span class="m-desc">${conf.desc || ""}</span>`;
+    if (conf.icon) slotImg(conf.icon, im => {  // 프로그램 아이콘 슬롯
+      im.className = "m-icon";
+      b.querySelector(".m-emoji").replaceWith(im);
+    });
     b.addEventListener("click", () => { clickBeep(); run(); });
     menu.appendChild(b);
   }
@@ -334,9 +383,9 @@ function runWorldcup(conf) {
       `${roundName(round.length)} · ${mi / 2 + 1} / ${round.length / 2}`);
     const question = el("div", "maker-q", "더 끌리는 쪽을 클릭!");
     const choices = el("div", "maker-choices");
-    choices.appendChild(bigChoice(a.emoji, a.name, a.sub || "", () => pick(a)));
+    choices.appendChild(bigChoice(a.emoji, a.name, a.sub || "", () => pick(a), a.icon));
     choices.appendChild(el("span", "vs-badge", "VS"));
-    choices.appendChild(bigChoice(b.emoji, b.name, b.sub || "", () => pick(b)));
+    choices.appendChild(bigChoice(b.emoji, b.name, b.sub || "", () => pick(b), b.icon));
     makerBody(prog, question, choices);
   }
   function tasteComment() {
@@ -380,9 +429,9 @@ function runBalance(conf) {
     const prog = el("div", "maker-progress", `${qi + 1} / ${conf.questions.length}`);
     const question = el("div", "maker-q", conf.prompt || "둘 중 하나만 고를 수 있다면?");
     const choices = el("div", "maker-choices");
-    choices.appendChild(bigChoice("", q.a, "", () => answer(+1)));
+    choices.appendChild(bigChoice("", q.a, "", () => answer(+1), q.aImg));
     choices.appendChild(el("span", "vs-badge", "VS"));
-    choices.appendChild(bigChoice("", q.b, "", () => answer(-1)));
+    choices.appendChild(bigChoice("", q.b, "", () => answer(-1), q.bImg));
     makerBody(prog, question, choices);
   }
   function finish() {
@@ -521,6 +570,10 @@ async function loadGameMenu() {
     const b = document.createElement("button");
     b.innerHTML = `<span class="g-emoji">${g.emoji}</span><span>${g.title}</span>` +
       (g.desc ? `<span class="g-desc">${g.desc}</span>` : "");
+    if (g.icon) slotImg(g.icon, im => {  // 게임 폴더의 icon.png 슬롯
+      im.className = "g-icon";
+      b.querySelector(".g-emoji").replaceWith(im);
+    });
     b.addEventListener("click", () => { clickBeep(); openGame(g.url); });
     menu.appendChild(b);
   }
@@ -575,7 +628,36 @@ async function pollBuzzer() {
     const s = await (await fetch("/api/status")).json();
     $("buzzer-queue").textContent =
       "대기: " + (s.waiting.length ? s.waiting.map(w => `${w.station}(No.${String(w.number).padStart(3, "0")})`).join(" → ") : "없음");
+    renderReprint(s.recent || []);
   } catch (e) { $("buzzer-queue").textContent = "대기: 서버 연결 확인"; }
+}
+/* 인쇄 오류 대응: 최근 발급분을 번호·도안 그대로 재인쇄 */
+function renderReprint(recent) {
+  const box = $("buzzer-recent");
+  if (!recent.length) { box.innerHTML = ""; return; }
+  box.innerHTML = '<span class="re-label">🖨 최근 발급 — 인쇄가 안 나왔으면 재인쇄</span>';
+  for (const r of recent.slice(0, 6)) {
+    const chip = document.createElement("div");
+    chip.className = "re-chip";
+    const label = (r.dosan || "").split("/").pop().replace(/\.(png|pdf)$/i, "");
+    chip.innerHTML = `<span>No.${String(r.number).padStart(3, "0")} · ${label}</span>`;
+    const b = document.createElement("button");
+    b.textContent = "재인쇄";
+    b.addEventListener("click", async () => {
+      b.disabled = true; b.textContent = "…";
+      try {
+        const j = await (await fetch("/api/admin/reprint", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ number: r.number, dosan: r.dosan }),
+        })).json();
+        b.textContent = j.ok ? "완료✓" : "실패";
+      } catch (e) { b.textContent = "실패"; }
+      setTimeout(() => { b.disabled = false; b.textContent = "재인쇄"; }, 2500);
+    });
+    chip.appendChild(b);
+    box.appendChild(chip);
+  }
 }
 $("btn-buzzer-exit").addEventListener("click", closeBuzzer);
 $("btn-buzzer").addEventListener("click", async () => {
@@ -621,6 +703,7 @@ setInterval(() => { if (ws && ws.readyState === 1) ws.send("ping"); }, 25000); /
 /* ── 초기화 ── */
 async function init() {
   buildKeypad();
+  applyUiSlots();
   connectWS();
   try {
     const conf = await (await fetch("/api/config")).json();

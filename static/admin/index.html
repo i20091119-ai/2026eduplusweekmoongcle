@@ -5,8 +5,13 @@
 <title>뭉클 부스 관리</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
+/* 브랜드 서체: esamanru — /kiosk/fonts/ 의 woff2 교체로 변경 */
+@font-face { font-family:"esamanru"; font-weight:300; font-display:swap; src:url("/kiosk/fonts/esamanru-light.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:400 600; font-display:swap; src:url("/kiosk/fonts/esamanru-medium.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:700 900; font-display:swap; src:url("/kiosk/fonts/esamanru-bold.woff2") format("woff2"); }
+
 :root { --brand:#7E212F; }
-* { box-sizing:border-box; margin:0; padding:0; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; }
+* { box-sizing:border-box; margin:0; padding:0; font-family:"esamanru","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; }
 body { background:#f6f2ec; color:#2b2b2b; padding:20px; }
 h1 { font-size:26px; margin-bottom:16px; }
 h2 { font-size:18px; margin-bottom:10px; }
@@ -71,6 +76,14 @@ a.bigcall { display:inline-block; margin-top:8px; font-size:15px; }
   </div>
 
   <div class="card full">
+    <h2>최근 발급 · 재인쇄 (인쇄 오류 대응)</h2>
+    <table>
+      <thead><tr><th>번호</th><th>자리</th><th>도안</th><th>상태</th><th></th></tr></thead>
+      <tbody id="rbody"><tr><td colspan="5">-</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="card full">
     <h2>일자별 참여 집계</h2>
     <table><thead><tr><th>일자</th><th>참여</th></tr></thead><tbody id="pbody"></tbody></table>
     <div id="log"></div>
@@ -112,10 +125,31 @@ async function refresh(){
           <td><button onclick="api('/api/admin/call',{station:'${w.station}'})">호출</button></td></tr>`).join("")
       : '<tr><td colspan="5" style="color:#999">대기 없음</td></tr>';
     $("pbody").innerHTML = (s.per_day||[]).map(p=>`<tr><td>${p.day}</td><td>${p.total}</td></tr>`).join("");
+    const rb = $("rbody");
+    rb.innerHTML = (s.recent||[]).length
+      ? (s.recent||[]).map((r,i)=>`<tr><td>No.${String(r.number).padStart(3,"0")}</td><td>${r.station}</td>
+          <td>${r.dosan}</td><td>${r.status}</td>
+          <td><button data-re="${i}">🖨 재인쇄</button></td></tr>`).join("")
+      : '<tr><td colspan="5" style="color:#999">오늘 발급 없음</td></tr>';
+    rb.querySelectorAll("button[data-re]").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        const r = s.recent[Number(btn.dataset.re)];
+        btn.disabled = true; btn.textContent = "…";
+        try{
+          const j = await (await fetch("/api/admin/reprint",{method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({number:r.number, dosan:r.dosan})})).json();
+          btn.textContent = j.ok ? "완료✓" : "실패";
+          log(`재인쇄 No.${r.number} → ${j.ok?"성공":j.print_error||"실패"}`);
+        }catch(e){ btn.textContent = "실패"; }
+      });
+    });
   }catch(e){ $("conn").textContent="연결 끊김"; }
 }
 refresh();
 setInterval(refresh, 3000);
 </script>
+<img src="/kiosk/logo-mark.png" alt="뭉클" onerror="this.style.display='none'"
+  style="position:fixed;right:16px;bottom:12px;height:40px;opacity:.4;pointer-events:none;z-index:30">
 </body>
 </html>

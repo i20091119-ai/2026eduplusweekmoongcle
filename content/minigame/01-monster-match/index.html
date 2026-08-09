@@ -4,22 +4,31 @@
 <meta charset="utf-8">
 <title>떡몬스터 짝맞추기</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
+/* 브랜드 서체: esamanru — /kiosk/fonts/ 의 woff2 교체로 변경 */
+@font-face { font-family:"esamanru"; font-weight:300; font-display:swap; src:url("/kiosk/fonts/esamanru-light.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:400 600; font-display:swap; src:url("/kiosk/fonts/esamanru-medium.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:700 900; font-display:swap; src:url("/kiosk/fonts/esamanru-bold.woff2") format("woff2"); }
+
+* { margin:0; padding:0; box-sizing:border-box; font-family:"esamanru","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
 html,body { width:100%; height:100%; overflow:hidden; }
 body { background:#FFF3E6; display:flex; flex-direction:column; align-items:center; }
 header { display:flex; gap:30px; align-items:center; padding:14px; font-size:24px; font-weight:800; color:#5a4a3a; }
 #board { flex:1; display:grid; grid-template-columns:repeat(4, 130px); grid-auto-rows:130px;
   gap:14px; align-content:center; }
 .card { border:none; border-radius:16px; font-size:64px; cursor:pointer;
-  background:#F5573B; box-shadow:0 5px 0 #b33a24; color:transparent; transition:transform .15s; }
-.card.open { background:#fff; color:inherit; box-shadow:0 5px 0 #ddd; }
-.card.done { background:#c9f2cf; color:inherit; box-shadow:none; transform:scale(.94); cursor:default; }
+  background:#7E212F center/cover; box-shadow:0 5px 0 #4d141d; transition:transform .15s;
+  display:flex; align-items:center; justify-content:center; }
+.card .face { visibility:hidden; }
+.card .face img { height:100px; }
+.card.open, .card.done { background:#fff; box-shadow:0 5px 0 #ddd; }
+.card.open .face, .card.done .face { visibility:visible; }
+.card.done { background:#c9f2cf; box-shadow:none; transform:scale(.94); cursor:default; }
 #overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none;
   align-items:center; justify-content:center; flex-direction:column; gap:18px; color:#fff; }
 #overlay.show { display:flex; }
 #overlay h1 { font-size:54px; }
 #overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;
-  border-radius:16px; background:#F5573B; color:#fff; cursor:pointer; }
+  border-radius:16px; background:#7E212F; color:#F2C744; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -28,19 +37,43 @@ header { display:flex; gap:30px; align-items:center; padding:14px; font-size:24p
 <div id="overlay"><h1 id="ov-title">🎉 성공!</h1><p id="ov-sub" style="font-size:26px"></p><button onclick="start()">다시 하기</button></div>
 <script>
 "use strict";
-const MONSTERS = ["🐰","🌕","🍡","🥮","🍚","🧺"]; // 떡집 테마
+/* 이미지 슬롯: assets/카드1.png ~ 카드6.png (앞면 6종) · assets/카드뒷면.png — 없으면 이모지 */
+const MONSTERS = ["🐰","🌕","🍡","🥮","🍚","🧺"];
+const FACE = MONSTERS.map(m => m); // 카드 앞면 HTML (이모지 또는 <img>)
+MONSTERS.forEach((_, i) => {
+  const im = new Image();
+  im.src = `assets/카드${i + 1}.png`;
+  im.onload = () => { FACE[i] = `<img src="${im.src}">`; renderFaces(); };
+});
+(function(){
+  const im = new Image();
+  im.src = "assets/카드뒷면.png";
+  im.onload = () => {
+    const st = document.createElement("style");
+    st.textContent = `.card:not(.open):not(.done){ background:#7E212F url(${im.src}) center/cover; }`;
+    document.head.appendChild(st);
+  };
+})();
+
 const board = document.getElementById("board");
 let first = null, lock = false, moves = 0, found = 0;
 
+function renderFaces(){
+  document.querySelectorAll(".card").forEach(c => {
+    c.querySelector(".face").innerHTML = FACE[Number(c.dataset.k)];
+  });
+}
 function start(){
   document.getElementById("overlay").classList.remove("show");
   moves = 0; found = 0; first = null; lock = false;
   update();
-  const deck = [...MONSTERS, ...MONSTERS].sort(() => Math.random() - .5);
+  const deck = [...MONSTERS.keys(), ...MONSTERS.keys()].sort(() => Math.random() - .5);
   board.innerHTML = "";
-  deck.forEach(m => {
+  deck.forEach(k => {
     const b = document.createElement("button");
-    b.className = "card"; b.textContent = m;
+    b.className = "card";
+    b.dataset.k = k;
+    b.innerHTML = `<span class="face">${FACE[k]}</span>`;
     b.addEventListener("click", () => flip(b));
     board.appendChild(b);
   });
@@ -54,7 +87,7 @@ function flip(b){
   b.classList.add("open");
   if (!first){ first = b; return; }
   moves++; update();
-  if (first.textContent === b.textContent){
+  if (first.dataset.k === b.dataset.k){
     first.classList.add("done"); b.classList.add("done");
     first = null; found++; update();
     if (found === MONSTERS.length){

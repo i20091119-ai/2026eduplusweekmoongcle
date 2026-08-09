@@ -1,5 +1,14 @@
 /* 뭉클 떡집 키오스크 — 기준 1280×720, 대형 글자·대형 버튼 (설계명세서 2.3)
  * 팔레트: 떡집 브랜드 (버건디 · 달 노랑 · 하늘색 · 크림) — 디자인팀 시안 기준 */
+
+/* 브랜드 서체: esamanru (이사만루체) — fonts/ 폴더의 woff2 교체로 서체 변경 가능 */
+@font-face { font-family: "esamanru"; font-weight: 300; font-display: swap;
+  src: url("fonts/esamanru-light.woff2") format("woff2"); }
+@font-face { font-family: "esamanru"; font-weight: 400 600; font-display: swap;
+  src: url("fonts/esamanru-medium.woff2") format("woff2"); }
+@font-face { font-family: "esamanru"; font-weight: 700 900; font-display: swap;
+  src: url("fonts/esamanru-bold.woff2") format("woff2"); }
+
 :root {
   --brand: #7E212F;        /* 버건디 — 간판·번호블록 */
   --brand-dark: #5e1722;
@@ -11,7 +20,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
 html, body { width: 100%; height: 100%; overflow: hidden; }
 body {
-  font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  font-family: "esamanru", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
   background: var(--bg); color: var(--ink);
   cursor: default; /* 트랙볼 커서 표시 유지 */
 }
@@ -58,20 +67,40 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
   box-shadow: 0 10px 30px rgba(0,0,0,.15); background: #fff; }
 .intro-empty { font-size: 34px; color: #999; }
 
-/* ③ 코드 입력 */
-.code-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
+/* ③ 코드 입력 — 달밤 무드 기본 디자인 (배경·키는 content/ui/ 슬롯으로 교체 가능) */
+#screen-code {
+  background:
+    radial-gradient(circle at 88% 14%, #F7E7A9 0 70px, rgba(247,231,169,.35) 71px 92px, transparent 93px),
+    radial-gradient(ellipse 140px 44px at 12% 26%, #ffffffbb 0 100%, transparent 101%),
+    radial-gradient(ellipse 180px 52px at 78% 74%, #ffffff88 0 100%, transparent 101%),
+    linear-gradient(180deg, #9CCBE2 0%, var(--bg) 55%, #C4E2EF 100%);
+}
+.code-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
 .code-display { display: flex; gap: 18px; }
 .code-display .digit {
-  width: 90px; height: 110px; background: var(--card); border-radius: 16px;
-  border: 4px solid var(--moon); font-size: 64px; font-weight: 900;
+  width: 92px; height: 112px; background: var(--card); border-radius: 22px;
+  border: 4px solid var(--moon); font-size: 64px; font-weight: 900; color: var(--brand);
   display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 0 rgba(0,0,0,.10), inset 0 -8px 0 rgba(242,199,68,.25);
 }
+.code-display .digit:empty::after { content: "·"; color: #e0cfae; }
 .code-display.error .digit { border-color: var(--brand); animation: shake .4s; }
 @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-12px)} 75%{transform:translateX(12px)} }
-.keypad { display: grid; grid-template-columns: repeat(3, 110px); gap: 14px; }
-.keypad button { font-size: 40px; font-weight: 800; height: 86px; }
-.keypad .key-del { font-size: 30px; background: #f3e2c8; }
-.code-msg { font-size: 24px; color: #35505f; min-height: 32px; }
+.keypad { display: grid; grid-template-columns: repeat(3, 118px); gap: 16px; }
+.keypad button {
+  font-size: 42px; font-weight: 900; height: 96px; border-radius: 50%;
+  color: var(--brand); border: 3px solid #f0e2c8;
+  box-shadow: 0 6px 0 rgba(0,0,0,.12), inset 0 -6px 0 rgba(242,199,68,.35);
+  transition: transform .08s;
+}
+.keypad button:hover { transform: scale(1.06); border-color: var(--moon); }
+.keypad .key-del { font-size: 28px; background: #f3e2c8; border-radius: 24px; }
+.code-msg { font-size: 24px; color: #35505f; min-height: 32px; background: rgba(255,255,255,.75);
+  border-radius: 999px; padding: 8px 26px; }
+.code-rabbit { position: absolute; right: 42px; bottom: 24px; font-size: 110px; line-height: 1;
+  animation: bob 2.6s ease-in-out infinite; pointer-events: none; }
+.code-rabbit-img { height: 190px; }
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
 .code-msg.ok { color: #2e9e44; font-weight: 800; }
 .code-msg.bad { color: var(--brand); font-weight: 800; }
 
@@ -97,6 +126,12 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
   border: 4px solid transparent; }
 .maker-choices button:hover { border-color: var(--brand); }
 .maker-choices .c-emoji { font-size: 58px; }
+.c-icon { height: 88px; max-width: 200px; object-fit: contain; }
+.m-icon { height: 96px; max-width: 220px; object-fit: contain; }
+.g-icon { height: 60px; max-width: 150px; object-fit: contain; }
+.img-btn { background: none !important; box-shadow: none !important; padding: 4px !important; }
+.img-btn:active { transform: scale(.95); }
+.tab.img-btn.active { filter: drop-shadow(0 4px 0 var(--moon)); }
 .vs-badge { font-size: 40px; font-weight: 900; color: var(--brand); align-self: center; }
 .maker-result-emoji { font-size: 120px; }
 .maker-result-img { height: 250px; border-radius: 18px; background: #fff;
@@ -184,7 +219,16 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
 .buzzer-result { font-size: 34px; font-weight: 800; min-height: 1.4em; }
 .buzzer-queue { font-size: 22px; color: #bbb; }
 .buzzer-exit { position: absolute; top: 20px; right: 20px; background: #444; color: #fff; }
+.buzzer-recent { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 1100px; }
+.buzzer-recent .re-chip { display: flex; align-items: center; gap: 8px; background: #3a3a3a;
+  border-radius: 12px; padding: 8px 12px; font-size: 17px; color: #ddd; }
+.buzzer-recent .re-chip button { font-size: 15px; font-weight: 800; padding: 6px 12px;
+  min-width: 0; min-height: 0; background: var(--moon); color: #3a2a00; border-radius: 8px; }
+.buzzer-recent .re-label { font-size: 16px; color: #999; width: 100%; text-align: center; }
 #secret-hotspot { position: fixed; top: 0; left: 0; width: 90px; height: 90px; z-index: 60; }
+/* 구석 뭉클 심볼 — 모든 화면 공통 워터마크 (호출·부저 오버레이 아래) */
+#corner-logo { position: fixed; right: 18px; bottom: 14px; height: 46px; width: auto;
+  opacity: .45; z-index: 30; pointer-events: none; }
 
 /* ⑦ 호출 */
 .called { background: var(--brand); color: #fff; z-index: 50; }

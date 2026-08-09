@@ -5,8 +5,13 @@
 <title>호출 버튼</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
+/* 브랜드 서체: esamanru — /kiosk/fonts/ 의 woff2 교체로 변경 */
+@font-face { font-family:"esamanru"; font-weight:300; font-display:swap; src:url("/kiosk/fonts/esamanru-light.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:400 600; font-display:swap; src:url("/kiosk/fonts/esamanru-medium.woff2") format("woff2"); }
+@font-face { font-family:"esamanru"; font-weight:700 900; font-display:swap; src:url("/kiosk/fonts/esamanru-bold.woff2") format("woff2"); }
+
 /* 대형 호출 버튼 뷰 — Q3 아케이드 버튼 대체 (설계명세서 6장: 노트북/스마트폰) */
-* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; }
+* { margin:0; padding:0; box-sizing:border-box; font-family:"esamanru","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; }
 html,body { width:100%; height:100%; }
 body { display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:26px; background:#2b2b2b; color:#fff; user-select:none; }
@@ -51,5 +56,7 @@ async function poll(){
 }
 poll(); setInterval(poll, 2000);
 </script>
+<img src="/kiosk/logo-mark.png" alt="뭉클" onerror="this.style.display='none'"
+  style="position:fixed;right:16px;bottom:12px;height:40px;opacity:.4;pointer-events:none;z-index:30">
 </body>
 </html>

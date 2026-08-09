@@ -48,8 +48,9 @@
   <div class="code-wrap">
     <div id="code-display" class="code-display"></div>
     <div id="keypad" class="keypad"></div>
-    <p id="code-msg" class="code-msg">스마트폰으로 몬스터에 접촉해 퀴즈를 풀면 코드를 받아요 📱</p>
+    <p id="code-msg" class="code-msg">스마트폰으로 떡몬스터에 접촉해 퀴즈를 풀면 코드를 받아요 📱</p>
   </div>
+  <div id="code-rabbit" class="code-rabbit">🐰</div>
   <footer class="nav-row">
     <button id="btn-code-back" class="btn-big">◀ 소개 다시 보기</button>
   </footer>
@@ -102,12 +103,16 @@
     <button id="btn-buzzer" class="buzzer-btn">호출<br>🔔</button>
     <div id="buzzer-result" class="buzzer-result"></div>
     <div id="buzzer-queue" class="buzzer-queue">대기: -</div>
+    <div id="buzzer-recent" class="buzzer-recent"></div>
   </div>
   <button id="btn-buzzer-exit" class="btn-big buzzer-exit">✕ 닫기</button>
 </section>
 
 <!-- 어트랙트 숨김 진입 핫스팟 (왼쪽 위 구석 5회 연속 클릭) -->
 <div id="secret-hotspot"></div>
+
+<!-- 구석 뭉클 심볼 워터마크 — 교체 슬롯: logo-mark.png -->
+<img id="corner-logo" src="logo-mark.png" alt="뭉클" onerror="this.style.display='none'">
 
 <!-- ⑦ 띵동 호출 (최우선 오버레이) -->
 <section id="screen-called" class="screen hidden called">

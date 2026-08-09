@@ -16,6 +16,16 @@ html = (ROOT / "static/kiosk/index.html").read_text(encoding="utf-8")
 css = (ROOT / "static/kiosk/kiosk.css").read_text(encoding="utf-8")
 js = (ROOT / "static/kiosk/kiosk.js").read_text(encoding="utf-8")
 
+# 브랜드 서체 — 파일 안에 폰트가 1벌만 실리도록 CSS에는 마커를 두고
+# 실제 data URI는 JS 상수(FONT_URI)로 한 번만 넣어 런타임에 치환한다.
+import base64 as _b64f
+font_uri = {}
+for _w in ("light", "medium", "bold"):
+    _fp = ROOT / f"static/kiosk/fonts/esamanru-{_w}.woff2"
+    if _fp.exists():
+        font_uri[_w] = "data:font/woff2;base64," + _b64f.b64encode(_fp.read_bytes()).decode()
+        css = css.replace(f'url("fonts/esamanru-{_w}.woff2")', f'url("__FONT_{_w}__")')
+
 # ── 콘텐츠 수집 ──
 codes = json.loads((ROOT / "content/quiz/quiz.json").read_text(encoding="utf-8"))["codes"]
 maker = {
@@ -79,10 +89,20 @@ for sub in sorted((ROOT / "content/minigame").iterdir()):
     except Exception:
         meta = {}
     url = f"/content/minigame/{sub.name}/index.html"
-    games.append({"id": sub.name, "title": meta.get("title", sub.name),
-                  "emoji": meta.get("emoji", "🎮"),
-                  "desc": meta.get("desc", ""), "url": url})
-    game_src[url] = (sub / "index.html").read_text(encoding="utf-8")
+    g = {"id": sub.name, "title": meta.get("title", sub.name),
+         "emoji": meta.get("emoji", "🎮"),
+         "desc": meta.get("desc", ""), "url": url}
+    html_src = (sub / "index.html").read_text(encoding="utf-8")
+    # 게임 내부 이미지 슬롯(assets/*.png)을 data URI로 인라인
+    assets_dir = sub / "assets"
+    if assets_dir.is_dir():
+        for a in assets_dir.glob("*.png"):
+            html_src = html_src.replace(f"assets/{a.name}",
+                "data:image/png;base64," + base64.b64encode(a.read_bytes()).decode())
+    if (sub / "icon.png").exists():
+        g["icon"] = "data:image/png;base64," + base64.b64encode((sub / "icon.png").read_bytes()).decode()
+    games.append(g)
+    game_src[url] = html_src
 
 
 def _alpha_thumb_uri(p, size=480):
@@ -102,6 +122,12 @@ if _char.exists():
     _char_uri = _alpha_thumb_uri(_char)
     game_src = {u: h.replace("/content/character/달토끼.png", _char_uri) for u, h in game_src.items()}
 
+# 게임 HTML의 서체 참조(/kiosk/fonts/…)를 마커로 — 실제 폰트는 FONT_URI 1벌만 싣는다
+game_src = {
+    u: re.sub(r"/kiosk/fonts/esamanru-(light|medium|bold)\.woff2", r"__FONT_\1__", h)
+    for u, h in game_src.items()
+}
+
 
 def js_dump(o):  # 문자열 내 </script> 로 바깥 스크립트가 닫히는 것 방지
     return json.dumps(o, ensure_ascii=False).replace("</", "<\\/")
@@ -109,6 +135,14 @@ def js_dump(o):  # 문자열 내 </script> 로 바깥 스크립트가 닫히는 
 
 prelude = f"""
 /* ═══ 데모 모킹 — 실제 서버 없이 동작 (부스 코드와 동일 UI) ═══ */
+/* 브랜드 서체 data URI — 파일 안에 1벌만 싣고 CSS·게임의 __FONT_*__ 마커를 런타임 치환 */
+const FONT_URI = {js_dump(font_uri)};
+function applyFontUris(s) {{
+  return s.replace(/__FONT_(light|medium|bold)__/g, (m, w) => FONT_URI[w] || "");
+}}
+document.querySelectorAll("style").forEach(st => {{
+  if (st.textContent.includes("__FONT_")) st.textContent = applyFontUris(st.textContent);
+}});
 const DEMO = {{
   codes: {js_dump(codes)},
   maker: {js_dump(maker)},
@@ -130,7 +164,9 @@ window.fetch = (url, opts) => {{
   if (u.includes("/api/code/verify")) {{
     return _json({{ ok: DEMO.codes.includes(JSON.parse(opts.body).code) }});
   }}
-  if (u.includes("/api/status"))   return _json({{ waiting: [{{ station: "A", number: DEMO.number }}] }});
+  if (u.includes("/api/admin/reprint")) return _json({{ ok: true }});
+  if (u.includes("/api/status"))   return _json({{ waiting: [{{ station: "A", number: DEMO.number }}],
+    recent: [{{ number: DEMO.number, station: "A", dosan: "동물/여우.png", status: "waiting" }}] }});
   if (u.includes("/api/call"))     return _json({{ ok: true, station: "A", number: DEMO.number }});
   if (u.includes("/api/complete")) {{
     DEMO.number++;
@@ -140,7 +176,7 @@ window.fetch = (url, opts) => {{
   return _json({{}});
 }};
 function setGameFrame(url) {{
-  document.getElementById("game-frame").srcdoc = DEMO.gameSrc[url] || "<p>준비 중</p>";
+  document.getElementById("game-frame").srcdoc = applyFontUris(DEMO.gameSrc[url] || "<p>준비 중</p>");
 }}
 function clearGameFrame() {{
   const f = document.getElementById("game-frame");
@@ -216,6 +252,9 @@ body = re.search(r"<body>\n(.*)\n<script src=\"kiosk\.js\"></script>", html, re.
 
 # 로고 인라인 (단일 파일 데모에는 외부 이미지가 없음) — 축소 WebP
 body = body.replace('src="logo.png"', 'src="' + _alpha_thumb_uri(ROOT / "static/kiosk/logo.png", 600) + '"')
+_mark = ROOT / "static/kiosk/logo-mark.png"
+if _mark.exists():
+    body = body.replace('src="logo-mark.png"', 'src="' + _alpha_thumb_uri(_mark, 128) + '"')
 
 page = f"""<!DOCTYPE html>
 <html lang="ko">
