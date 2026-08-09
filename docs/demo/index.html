@@ -395,12 +395,28 @@ function tone(freq, t0, dur, gain = 0.5) {
   o.connect(g).connect(audioCtx.destination);
   o.start(t0); o.stop(t0 + dur);
 }
-function dingDong(times = 3) {
+/* 은행 안내방송풍 차임 — 배음 3개를 겹친 종소리 음색, 긴 여운 */
+function chime(freq, t0, dur = 2.6, vol = 0.55) {
+  const partials = [[1, 1], [2, 0.22], [3, 0.09]];
+  for (const [mult, g] of partials) {
+    const o = audioCtx.createOscillator();
+    const gn = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.value = freq * mult;
+    gn.gain.setValueAtTime(0.0001, t0);
+    gn.gain.linearRampToValueAtTime(vol * g, t0 + 0.025); // 빠른 어택
+    gn.gain.exponentialRampToValueAtTime(0.001, t0 + dur); // 긴 여운
+    o.connect(gn).connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur);
+  }
+}
+function dingDong(times = 2) {
   ensureAudio();
-  const now = audioCtx.currentTime;
+  const now = audioCtx.currentTime + 0.05;
   for (let i = 0; i < times; i++) {
-    tone(880, now + i * 1.1, 0.9);        // 띵
-    tone(659, now + i * 1.1 + 0.35, 1.0); // 동
+    const t = now + i * 2.4;
+    chime(659.25, t);        // 띵~ (E5)
+    chime(523.25, t + 0.75); // 동~ (C5)
   }
 }
 function clickBeep() { ensureAudio(); tone(1200, audioCtx.currentTime, 0.08, 0.15); }
