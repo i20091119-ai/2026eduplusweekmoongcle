@@ -22,7 +22,7 @@ let code = "";
 let idleTimer = null;
 
 const $ = (id) => document.getElementById(id);
-const screens = ["attract", "intro", "code", "maker", "printing", "wait", "called"];
+const screens = ["attract", "intro", "code", "maker", "printing", "wait", "called", "buzzer"];
 let current = "attract";
 
 function show(name) {
@@ -34,7 +34,7 @@ function show(name) {
 /* ── 유휴 복귀: 진행 중 화면에서 조작이 없으면 어트랙트로 (대기·호출 화면은 예외) ── */
 function resetIdle() {
   clearTimeout(idleTimer);
-  if (current === "wait" || current === "called" || current === "attract") return;
+  if (current === "wait" || current === "called" || current === "attract" || current === "buzzer") return;
   idleTimer = setTimeout(() => show("attract"), IDLE_LIMIT_MS);
 }
 document.addEventListener("click", resetIdle);
@@ -420,8 +420,52 @@ $("btn-wintro-next").addEventListener("click", () => {
   waitIntroIdx = (waitIntroIdx + 1) % introImages.length; renderWaitIntro();
 });
 
+/* ── 🔒 부저 호출기 (스태프 전용 · 숨김) ──
+ * 진입: 어트랙트 화면 왼쪽 위 구석을 3초 안에 5회 클릭 */
+let secretClicks = 0, secretTimer = null, buzzerPoll = null;
+$("secret-hotspot").addEventListener("click", () => {
+  if (current !== "attract") return;
+  secretClicks++;
+  clearTimeout(secretTimer);
+  secretTimer = setTimeout(() => { secretClicks = 0; }, 3000);
+  if (secretClicks >= 5) { secretClicks = 0; openBuzzer(); }
+});
+function openBuzzer() {
+  $("buzzer-result").textContent = "";
+  show("buzzer");
+  pollBuzzer();
+  buzzerPoll = setInterval(pollBuzzer, 2000);
+}
+function closeBuzzer() {
+  clearInterval(buzzerPoll);
+  show("attract");
+}
+async function pollBuzzer() {
+  try {
+    const s = await (await fetch("/api/status")).json();
+    $("buzzer-queue").textContent =
+      "대기: " + (s.waiting.length ? s.waiting.map(w => `${w.station}(No.${String(w.number).padStart(3, "0")})`).join(" → ") : "없음");
+  } catch (e) { $("buzzer-queue").textContent = "대기: 서버 연결 확인"; }
+}
+$("btn-buzzer-exit").addEventListener("click", closeBuzzer);
+$("btn-buzzer").addEventListener("click", async () => {
+  const btn = $("btn-buzzer");
+  btn.disabled = true;
+  ensureAudio();
+  try {
+    const j = await (await fetch("/api/call", { method: "POST" })).json();
+    $("buzzer-result").textContent = j.ok
+      ? `✅ ${j.station} 자리 · No.${String(j.number).padStart(3, "0")} 호출!`
+      : "🪑 " + (j.reason || "대기 없음");
+    if (j.ok) dingDong(1);
+  } catch (e) { $("buzzer-result").textContent = "⚠ 서버 연결 확인"; }
+  pollBuzzer();
+  setTimeout(() => { btn.disabled = false; }, 1500); // 연타 방지
+});
+
 /* ── ⑦ 띵동 호출 — 최우선 인터럽트 ── */
 function onCalled(number) {
+  if (current === "buzzer") return; // 부저 화면(스태프 사용 중)은 호출 오버레이로 덮지 않음
   exitGame(); // 게임 상태는 버린다 (호출이 항상 우선)
   $("called-number").textContent = `No. ${String(number).padStart(3, "0")}`;
   show("called");

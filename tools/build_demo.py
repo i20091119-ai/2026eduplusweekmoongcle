@@ -79,6 +79,8 @@ window.fetch = (url, opts) => {{
   if (u.includes("/api/code/verify")) {{
     return _json({{ ok: DEMO.codes.includes(JSON.parse(opts.body).code) }});
   }}
+  if (u.includes("/api/status"))   return _json({{ waiting: [{{ station: "A", number: DEMO.number }}] }});
+  if (u.includes("/api/call"))     return _json({{ ok: true, station: "A", number: DEMO.number }});
   if (u.includes("/api/complete")) {{ DEMO.number++; return _json({{ ok: true, number: DEMO.number, printed: true }}); }}
   return _json({{}});
 }};

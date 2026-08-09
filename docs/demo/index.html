@@ -146,6 +146,25 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
 #wait-intro-img { max-height: 420px; max-width: 92%; border-radius: 14px; background: #fff;
   box-shadow: 0 6px 20px rgba(0,0,0,.12); }
 
+/* 🔒 부저 호출기 (숨김 · 스태프 전용) */
+.buzzer { background: #2b2b2b; color: #fff; z-index: 40; }
+.buzzer-head { font-size: 34px; font-weight: 800; }
+.buzzer-tag { font-size: 18px; background: #F2C744; color: #2b2b2b; border-radius: 8px;
+  padding: 4px 12px; vertical-align: middle; margin-left: 10px; }
+.buzzer-btn {
+  width: 340px; height: 340px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #b04a58, #7E212F 60%, #521320);
+  color: #F2C744; font-size: 64px; font-weight: 900;
+  box-shadow: 0 14px 0 #3c0d16, 0 20px 40px rgba(0,0,0,.5);
+  animation: pulse 2.4s infinite;
+}
+.buzzer-btn:active { transform: translateY(10px); box-shadow: 0 4px 0 #3c0d16; }
+.buzzer-btn:disabled { filter: grayscale(.7); animation: none; }
+.buzzer-result { font-size: 34px; font-weight: 800; min-height: 1.4em; }
+.buzzer-queue { font-size: 22px; color: #bbb; }
+.buzzer-exit { position: absolute; top: 20px; right: 20px; background: #444; color: #fff; }
+#secret-hotspot { position: fixed; top: 0; left: 0; width: 90px; height: 90px; z-index: 60; }
+
 /* ⑦ 호출 */
 .called { background: var(--brand); color: #fff; z-index: 50; }
 .called .accent { color: #ffe27a; }
@@ -259,6 +278,20 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
   </div>
 </section>
 
+<!-- 🔒 부저 호출기 (스태프 전용 · 숨김 화면 — 어트랙트 왼쪽 위 구석 5회 클릭으로 진입) -->
+<section id="screen-buzzer" class="screen hidden buzzer">
+  <div class="center-box">
+    <div class="buzzer-head">🛎 만들기존 호출기 <span class="buzzer-tag">스태프 전용</span></div>
+    <button id="btn-buzzer" class="buzzer-btn">호출<br>🔔</button>
+    <div id="buzzer-result" class="buzzer-result"></div>
+    <div id="buzzer-queue" class="buzzer-queue">대기: -</div>
+  </div>
+  <button id="btn-buzzer-exit" class="btn-big buzzer-exit">✕ 닫기</button>
+</section>
+
+<!-- 어트랙트 숨김 진입 핫스팟 (왼쪽 위 구석 5회 연속 클릭) -->
+<div id="secret-hotspot"></div>
+
 <!-- ⑦ 띵동 호출 (최우선 오버레이) -->
 <section id="screen-called" class="screen hidden called">
   <div class="center-box">
@@ -293,6 +326,8 @@ window.fetch = (url, opts) => {
   if (u.includes("/api/code/verify")) {
     return _json({ ok: DEMO.codes.includes(JSON.parse(opts.body).code) });
   }
+  if (u.includes("/api/status"))   return _json({ waiting: [{ station: "A", number: DEMO.number }] });
+  if (u.includes("/api/call"))     return _json({ ok: true, station: "A", number: DEMO.number });
   if (u.includes("/api/complete")) { DEMO.number++; return _json({ ok: true, number: DEMO.number, printed: true }); }
   return _json({});
 };
@@ -328,7 +363,7 @@ let code = "";
 let idleTimer = null;
 
 const $ = (id) => document.getElementById(id);
-const screens = ["attract", "intro", "code", "maker", "printing", "wait", "called"];
+const screens = ["attract", "intro", "code", "maker", "printing", "wait", "called", "buzzer"];
 let current = "attract";
 
 function show(name) {
@@ -340,7 +375,7 @@ function show(name) {
 /* ── 유휴 복귀: 진행 중 화면에서 조작이 없으면 어트랙트로 (대기·호출 화면은 예외) ── */
 function resetIdle() {
   clearTimeout(idleTimer);
-  if (current === "wait" || current === "called" || current === "attract") return;
+  if (current === "wait" || current === "called" || current === "attract" || current === "buzzer") return;
   idleTimer = setTimeout(() => show("attract"), IDLE_LIMIT_MS);
 }
 document.addEventListener("click", resetIdle);
@@ -726,8 +761,52 @@ $("btn-wintro-next").addEventListener("click", () => {
   waitIntroIdx = (waitIntroIdx + 1) % introImages.length; renderWaitIntro();
 });
 
+/* ── 🔒 부저 호출기 (스태프 전용 · 숨김) ──
+ * 진입: 어트랙트 화면 왼쪽 위 구석을 3초 안에 5회 클릭 */
+let secretClicks = 0, secretTimer = null, buzzerPoll = null;
+$("secret-hotspot").addEventListener("click", () => {
+  if (current !== "attract") return;
+  secretClicks++;
+  clearTimeout(secretTimer);
+  secretTimer = setTimeout(() => { secretClicks = 0; }, 3000);
+  if (secretClicks >= 5) { secretClicks = 0; openBuzzer(); }
+});
+function openBuzzer() {
+  $("buzzer-result").textContent = "";
+  show("buzzer");
+  pollBuzzer();
+  buzzerPoll = setInterval(pollBuzzer, 2000);
+}
+function closeBuzzer() {
+  clearInterval(buzzerPoll);
+  show("attract");
+}
+async function pollBuzzer() {
+  try {
+    const s = await (await fetch("/api/status")).json();
+    $("buzzer-queue").textContent =
+      "대기: " + (s.waiting.length ? s.waiting.map(w => `${w.station}(No.${String(w.number).padStart(3, "0")})`).join(" → ") : "없음");
+  } catch (e) { $("buzzer-queue").textContent = "대기: 서버 연결 확인"; }
+}
+$("btn-buzzer-exit").addEventListener("click", closeBuzzer);
+$("btn-buzzer").addEventListener("click", async () => {
+  const btn = $("btn-buzzer");
+  btn.disabled = true;
+  ensureAudio();
+  try {
+    const j = await (await fetch("/api/call", { method: "POST" })).json();
+    $("buzzer-result").textContent = j.ok
+      ? `✅ ${j.station} 자리 · No.${String(j.number).padStart(3, "0")} 호출!`
+      : "🪑 " + (j.reason || "대기 없음");
+    if (j.ok) dingDong(1);
+  } catch (e) { $("buzzer-result").textContent = "⚠ 서버 연결 확인"; }
+  pollBuzzer();
+  setTimeout(() => { btn.disabled = false; }, 1500); // 연타 방지
+});
+
 /* ── ⑦ 띵동 호출 — 최우선 인터럽트 ── */
 function onCalled(number) {
+  if (current === "buzzer") return; // 부저 화면(스태프 사용 중)은 호출 오버레이로 덮지 않음
   exitGame(); // 게임 상태는 버린다 (호출이 항상 우선)
   $("called-number").textContent = `No. ${String(number).padStart(3, "0")}`;
   show("called");

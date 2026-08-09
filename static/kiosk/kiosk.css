@@ -139,6 +139,25 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
 #wait-intro-img { max-height: 420px; max-width: 92%; border-radius: 14px; background: #fff;
   box-shadow: 0 6px 20px rgba(0,0,0,.12); }
 
+/* 🔒 부저 호출기 (숨김 · 스태프 전용) */
+.buzzer { background: #2b2b2b; color: #fff; z-index: 40; }
+.buzzer-head { font-size: 34px; font-weight: 800; }
+.buzzer-tag { font-size: 18px; background: #F2C744; color: #2b2b2b; border-radius: 8px;
+  padding: 4px 12px; vertical-align: middle; margin-left: 10px; }
+.buzzer-btn {
+  width: 340px; height: 340px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #b04a58, #7E212F 60%, #521320);
+  color: #F2C744; font-size: 64px; font-weight: 900;
+  box-shadow: 0 14px 0 #3c0d16, 0 20px 40px rgba(0,0,0,.5);
+  animation: pulse 2.4s infinite;
+}
+.buzzer-btn:active { transform: translateY(10px); box-shadow: 0 4px 0 #3c0d16; }
+.buzzer-btn:disabled { filter: grayscale(.7); animation: none; }
+.buzzer-result { font-size: 34px; font-weight: 800; min-height: 1.4em; }
+.buzzer-queue { font-size: 22px; color: #bbb; }
+.buzzer-exit { position: absolute; top: 20px; right: 20px; background: #444; color: #fff; }
+#secret-hotspot { position: fixed; top: 0; left: 0; width: 90px; height: 90px; z-index: 60; }
+
 /* ⑦ 호출 */
 .called { background: var(--brand); color: #fff; z-index: 50; }
 .called .accent { color: #ffe27a; }
