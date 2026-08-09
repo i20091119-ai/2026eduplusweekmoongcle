@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>뭉클 부스 현장 운영 설명서</title>
+<style>
+@page { size: A4; margin: 9mm 9mm; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Noto Sans KR","Malgun Gothic",sans-serif; color: #2b2320; font-size: 8.6pt; line-height: 1.45; }
+h1 { font-size: 14.5pt; color: #7E212F; }
+.subtitle { color: #6a5648; font-size: 8pt; margin-bottom: 2mm; }
+h2 { font-size: 10pt; color: #7E212F; border-bottom: 2px solid #F2C744; padding-bottom: 0.6mm; margin: 2.2mm 0 1.4mm; }
+table { width: 100%; border-collapse: collapse; margin: 1mm 0 1.5mm; font-size: 8pt; }
+th { background: #7E212F; color: #FFF6E4; text-align: left; padding: 1mm 1.6mm; }
+td { border-bottom: 1px solid #e5d8c8; padding: 0.9mm 1.6mm; vertical-align: top; }
+tr:nth-child(even) td { background: #FBF6EC; }
+code { font-family: "Consolas","D2Coding",monospace; background: #F3EADA; border-radius: 2px; padding: 0 1mm; font-size: 7.8pt; }
+.danger { background: #FBE9E7; border-left: 3px solid #7E212F; padding: 1.2mm 2mm; margin: 1.2mm 0; font-size: 8.4pt; }
+ol, ul { margin: 0 0 1.5mm 4.5mm; }
+li { margin-bottom: 0.5mm; }
+pre { background: #2b2320; color: #FFF6E4; border-radius: 2mm; padding: 1.6mm 2.5mm; font-size: 7.6pt;
+  font-family: "Consolas","D2Coding",monospace; margin: 1mm 0 1.5mm; line-height: 1.5; white-space: pre; }
+.cols { column-count: 2; column-gap: 6mm; column-rule: 1px solid #e5d8c8; }
+.keep { break-inside: avoid; }
+.wifi { display: flex; gap: 2mm; margin: 1mm 0 1.5mm; text-align: center; }
+.wifi div { flex: 1; background: #FBF6EC; border: 1px solid #E3CFA8; border-radius: 2mm; padding: 1.2mm; }
+.wifi b { display: block; font-size: 10.5pt; color: #7E212F; }
+.wifi span { font-size: 7pt; color: #8a7666; }
+b.red { color: #7E212F; }
+</style>
+</head>
+<body>
+
+<h1>🍡 뭉클 부스 현장 운영 설명서 <span style="font-size:8.5pt;color:#6a5648;font-weight:400">— 에듀플러스위크 2026 (8/12–14 코엑스) · 경남수학문화관</span></h1>
+
+<div class="danger"><b>절대 금지 2가지:</b> ① 마스터 노트북의 검은 서버 창 닫기 ② 마스터 노트북 덮개 닫기/종료 — 이 둘만 지키면 부스는 안 멈춥니다. 화면이 이상하면 만능 해결책은 <b>새로고침(F5 / 태블릿은 아래로 당기기)</b>. 인터넷은 필요 없음.</div>
+
+<div class="wifi">
+  <div><span>Wi-Fi 이름</span><b>뭉클</b></div>
+  <div><span>비밀번호</span><b>02280228</b></div>
+  <div><span>서버 주소</span><b>192.168.137.1</b></div>
+  <div><span>정답 코드</span><b style="font-size:9pt">0228 4827 7691 0625 3756</b></div>
+</div>
+
+<table>
+<tr><th>기기</th><th>브라우저 주소 (바탕화면/즐겨찾기 바로가기와 동일)</th></tr>
+<tr><td><b>노트북 A</b> (퀴즈존)</td><td><code>http://192.168.137.1:8000/kiosk/?station=A</code></td></tr>
+<tr><td><b>노트북 B</b> (퀴즈존)</td><td><code>http://192.168.137.1:8000/kiosk/?station=B</code></td></tr>
+<tr><td><b>태블릿 C</b> (만들기존)</td><td><code>http://192.168.137.1:8000/kiosk/?station=C</code> &nbsp;·&nbsp; 관리자: <code>/admin/</code></td></tr>
+</table>
+
+<div class="cols">
+
+<div class="keep">
+<h2>1. 마스터 노트북 (프린터 옆 · 서버)</h2>
+<ol>
+<li><b>전원 어댑터</b> 연결 (배터리 운영 금지)</li>
+<li>프린터 전원 켜고 <b>USB로 노트북과 연결</b> · A4 용지 채우기</li>
+<li><b>핫스팟 켜기</b>: 설정 → 네트워크 및 인터넷 → <b>모바일 핫스팟 켬</b>
+→ 속성에서 이름 <b>뭉클</b> / 암호 <b>02280228</b> / 2.4GHz 확인
+→ "장치 미연결 시 핫스팟 끄기(전원 절약)" 옵션은 <b>끄기</b></li>
+<li>바탕화면 <b>「부스 서버」 더블클릭</b> → 검은 창에 <code>Uvicorn running</code> 뜨면 성공. <b class="red">이 창은 닫지 말 것</b> (최소화만)</li>
+<li>브라우저에서 <code>localhost:8000/kiosk/</code> 열리면 완료</li>
+</ol>
+<p style="font-size:7.8pt;color:#6a5648">※ 핫스팟이 "인터넷 없음"이라며 안 켜지면: 아무 폰 핫스팟을 켜고 4대 전부 그 Wi-Fi에 접속 → 마스터에서 cmd에 <code>ipconfig</code> → IPv4 주소로 위 표의 IP만 교체.</p>
+</div>
+
+<div class="keep">
+<h2>2. 퀴즈존 노트북 A·B</h2>
+<ol>
+<li>전원 어댑터 연결 → 윈도우 로그인 <b>PIN 1122</b></li>
+<li>포터블 디스플레이 연결 — <b>미니 HDMI↔HDMI 케이블</b> (일반 HDMI 아님!) + 디스플레이 USB 전원</li>
+<li>트랙볼 마우스 유선(USB) 연결</li>
+<li>Wi-Fi <b>뭉클</b> 접속 → 바탕화면 <b>「뭉클 A」/「뭉클 B」</b> 실행</li>
+<li><b>F11</b> 전체화면 → 화면 왼쪽 아래 <b>A/B 글자 확인</b></li>
+</ol>
+</div>
+
+<div class="keep">
+<h2>3. 만들기존 태블릿 C</h2>
+<ol>
+<li><b>충전기 꽂은 채</b> 거치 · 화면 자동 꺼짐 <b>"안 함"</b>으로 설정</li>
+<li>Wi-Fi <b>뭉클</b> 접속 → 즐겨찾기 「뭉클」로 웹앱 진입</li>
+<li>화면 <b>왼쪽 위 빈 구석을 3초 안에 5번 연타</b> → 호출기 화면</li>
+</ol>
+</div>
+
+<div class="keep">
+<h2>4. 호출기 사용법 (만들기존 스태프)</h2>
+<table>
+<tr><td>자리 남 → 다음 손님</td><td><b>종 버튼 1번</b> → 먼저 온 손님 화면에 「띵동! No.○○○」 → 결과지 들고 옴 (누른 뒤 1.5초 잠김 · 대기 없으면 무반응)</td></tr>
+<tr><td>대기 확인</td><td>버튼 아래 「대기: A(No.007)」 — 자리별 대기 번호</td></tr>
+<tr><td>인쇄 실패/번짐</td><td>맨 아래 <b>최근 발급 → [재인쇄]</b> — 같은 결과지 재출력</td></tr>
+<tr><td>손님 화면 복귀</td><td>오른쪽 위 ✕ 닫기</td></tr>
+</table>
+<p style="font-size:7.8pt;color:#6a5648">손님 흐름: 폰으로 떡몬스터 태그·퀴즈 → 4자리 코드 → 퀴즈존에서 입력·검사 → 인쇄 → 자리에서 미니게임 대기 → 띵동! → 만들기존.</p>
+</div>
+
+<div class="keep">
+<h2>5. 문제 해결 (증상 → 조치)</h2>
+<table>
+<tr><td>화면 이상·멈춤</td><td><b>새로고침</b>(F5/당기기) — 대부분 해결</td></tr>
+<tr><td>전 기기 「서버 연결 확인」</td><td>마스터 확인: 서버 창 닫혔으면 <b>「부스 서버」 재실행</b>(번호 유지됨) · 핫스팟 꺼졌으면 다시 켜고 각 기기 Wi-Fi 재접속</td></tr>
+<tr><td>인쇄 안 나옴</td><td>프린터 전원·용지·액정 메시지(OK 누르기) 확인 → 호출기 <b>[재인쇄]</b></td></tr>
+<tr><td>「이미 대기 중」 표시</td><td>고장 아님 — 그 자리에 대기 1명 있다는 뜻. <b>호출</b>로 자리 비우면 진행됨</td></tr>
+<tr><td>호출 시 두 화면이 같이 울림</td><td>같은 주소로 열린 것 — 왼쪽 아래 글자 확인, 주소 끝 <code>?station=</code> 글자 수정</td></tr>
+<tr><td>코드가 안 먹힘</td><td>정답 코드 5개 확인(위 박스) → 맞는데도 안 되면 서버 창 확인</td></tr>
+<tr><td>소리 안 남</td><td>볼륨 확인 · 화면을 한 번 클릭/터치한 뒤부터 소리 남</td></tr>
+</table>
+</div>
+
+<div class="keep">
+<h2>개장(아침) / 마감(저녁)</h2>
+<p><b>개장:</b> 1→2→3 순서로 켜기 → 리허설 1회(A에서 0228 입력 → 검사 → 인쇄 확인 → 호출 → A 띵동 확인) → 볼륨·절전 확인.<br>
+<b>마감:</b> 서버 창 닫기 → 전 기기 종료·충전 → A4 잔량 확인 (다음 날 번호는 자동으로 1번부터).</p>
+</div>
+
+</div>
+</body>
+</html>
