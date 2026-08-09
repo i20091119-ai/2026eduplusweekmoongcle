@@ -129,7 +129,8 @@ for sub in sorted((ROOT / "content/minigame").iterdir()):
         amap = {}
         for a in sorted(assets_dir.iterdir()):
             if a.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}:
-                amap[a.name] = _alpha_thumb_uri(a, 360)
+                # 배경류는 화면 전체에 깔리므로 고해상도 유지
+                amap[a.name] = _alpha_thumb_uri(a, 1920 if a.stem.startswith("배경") else 360)
         if amap:
             shim = ("<script>window.__ASSETS__=" + json.dumps(amap, ensure_ascii=False)
                     + ";(function(){var d=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');"
