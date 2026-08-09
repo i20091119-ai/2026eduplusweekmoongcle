@@ -425,8 +425,11 @@ function runWorldcup(conf) {
     if (mi >= round.length) {
       if (next.length === 1) {
         const w = next[0];
+        // 인쇄물에 우승 음식의 매력·곁들임 추천까지 담는다
+        const story = `15번의 선택 끝에 살아남은 오늘의 우승 음식이에요. ${w.why}` +
+          (w.sub ? ` 최고의 짝꿍은 ${w.sub} — 같이 먹으면 맛이 두 배거든요.` : "");
         return showMakerResult(w.emoji, w.name, tasteComment(), w.pdf,
-          { why: w.why, img: w.img || (w.pdf ? "/content/dosan/" + w.pdf : "") });
+          { why: story, img: w.img || (w.pdf ? "/content/dosan/" + w.pdf : "") });
       }
       round = next; next = []; mi = 0;
     }

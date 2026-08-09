@@ -31,6 +31,8 @@ body { background:#ACD6E8; cursor:pointer; }
 #msflash.good { color:#1fae8e; animation:pop .35s; }
 #msflash.bad  { color:#c0392b; animation:shake .35s; }
 @keyframes shake { 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
+/* 카드 표시 중: 게임용 자리들을 접어 카드가 정중앙에 오게 */
+#stage.carded #big, #stage.carded #emoji, #stage.carded #sub, #stage.carded #msflash { display:none; }
 /* 미션1: 화면색 신호 */
 #stage.waiting { background:#7E212F; }
 #stage.waiting #big, #stage.waiting #sub { color:#FFE9EC; }
@@ -83,10 +85,15 @@ let phase = "idle", clickHandler = null;
 const ART = { "토끼":"🐰", "거북이":"🐢", "원숭이":"🐵", "나무늘보":"🦥",
               "떡":"🍡", "여우":"🦊", "독수리":"🦅", "치타":"🐆" };
 const IMG = {};
+let artPending = Object.keys(ART).length, introShown = false;
+function artSettled(){
+  if (--artPending === 0 && !introShown){ introShown = true; intro(); }
+}
 Object.keys(ART).forEach(k => {
   const im = new Image();
   im.src = `assets/${k}.png`;
-  im.onload = () => { IMG[k] = im.src; if (k === "떡") setRingTteok(); };
+  im.onload = () => { IMG[k] = im.src; if (k === "떡") setRingTteok(); artSettled(); };
+  im.onerror = artSettled;
 });
 function face(k, px){
   return IMG[k] ? `<img src="${IMG[k]}" style="height:${px}px;vertical-align:middle">`
@@ -125,9 +132,9 @@ function card(html){
   $("card-slot").innerHTML = `<div class="card">${html}</div>`;
   ["big","emoji","sub","msflash"].forEach(id => $(id).textContent = "");
   $("ring-area").style.display = "none";
-  stage.className = "";
+  stage.className = "carded"; // 빈 자리(min-height)를 접어 카드를 화면 가운데로
 }
-function clearCard(){ $("card-slot").innerHTML = ""; }
+function clearCard(){ $("card-slot").innerHTML = ""; stage.className = ""; }
 
 /* ── 점수 집계 ── */
 const scores = { s1: 0, s2: 0, s3: 0 };   // 각 100점 만점
@@ -190,8 +197,8 @@ function m1Click(){
 function mission2Intro(){
   $("mission-label").textContent = "미션 2 / 3";
   setDots(6, 0);
-  card(`<span class="mission-no">미션 2</span><h1>🐰 참을성 반응</h1>
-    <p><b>토끼(🐰)</b>가 나오면 최대한 빨리 클릭!<br><b>거북이(🐢)</b>가 나오면 꾹 참기!<br>잘못 누르거나 놓치면 감점이에요. (6회)</p>
+  card(`<span class="mission-no">미션 2</span><h1>${face("토끼", 34)} 참을성 반응</h1>
+    <p><b>토끼</b> ${face("토끼", 24)} 가 나오면 최대한 빨리 클릭!<br><b>거북이</b> ${face("거북이", 24)} 가 나오면 꾹 참기!<br>잘못 누르거나 놓치면 감점이에요. (6회)</p>
     <button>시작</button>`);
   $("card-slot").querySelector("button").onclick = (e) => { e.stopPropagation(); clearCard(); m2Start(); };
 }
@@ -207,7 +214,7 @@ function m2Round(){
   stage.className = "";
   $("big").textContent = "준비…";
   $("emoji").textContent = "";
-  $("sub").textContent = "토끼만! 🐰";
+  $("sub").innerHTML = `토끼만! ${face("토끼", 26)}`;
   setTimeout(() => {
     if (phase !== "m2gap") return;
     const cur = m2.seq[m2.i];
@@ -260,7 +267,7 @@ function m2Next(){
 function mission3Intro(){
   $("mission-label").textContent = "미션 3 / 3";
   setDots(3, 0);
-  card(`<span class="mission-no">미션 3</span><h1>🍡 타이밍 캐치</h1>
+  card(`<span class="mission-no">미션 3</span><h1>${face("떡", 34)} 타이밍 캐치</h1>
     <p>바깥의 <b>버건디 링</b>이 점점 줄어들어요.<br><b>초록 점선</b>과 겹치는 순간 클릭!<br>정확할수록 높은 점수 (3회)</p>
     <button>시작</button>`);
   $("card-slot").querySelector("button").onclick = (e) => { e.stopPropagation(); clearCard(); m3Round(); };
@@ -331,8 +338,8 @@ function finale(){
     <p>${g.t}</p>
     <div class="bars">
       <div class="bar-row"><span class="lbl">⚡ 번개 반응</span><div class="bar-track"><div class="bar-fill" data-w="${scores.s1}"></div></div><span class="pts">${scores.s1}</span></div>
-      <div class="bar-row"><span class="lbl">🐰 참을성 반응</span><div class="bar-track"><div class="bar-fill" data-w="${scores.s2}"></div></div><span class="pts">${scores.s2}</span></div>
-      <div class="bar-row"><span class="lbl">🍡 타이밍 캐치</span><div class="bar-track"><div class="bar-fill" data-w="${scores.s3}"></div></div><span class="pts">${scores.s3}</span></div>
+      <div class="bar-row"><span class="lbl">${face("토끼", 17)} 참을성 반응</span><div class="bar-track"><div class="bar-fill" data-w="${scores.s2}"></div></div><span class="pts">${scores.s2}</span></div>
+      <div class="bar-row"><span class="lbl">${face("떡", 17)} 타이밍 캐치</span><div class="bar-track"><div class="bar-fill" data-w="${scores.s3}"></div></div><span class="pts">${scores.s3}</span></div>
     </div>
     <div id="best">${isBest ? "🏆 오늘 이 자리 최고 기록 갱신!" : `오늘 이 자리 최고 기록: ${best}점`}</div>
     <button>다시 하기</button>`);
@@ -356,7 +363,7 @@ function intro(){
   setDots(0, 0);
   card(`<h1>⚡ 동물 순발력 테스트</h1>
     <p>서로 다른 순발력을 재는 <b>3가지 미션</b>!<br>
-    ⚡ 번개 반응 → 🐰 참을성 반응 → 🍡 타이밍 캐치<br>
+    ⚡ 번개 반응 → ${face("토끼", 24)} 참을성 반응 → ${face("떡", 24)} 타이밍 캐치<br>
     종합 점수로 <b>나의 순발력 동물</b>을 알려드려요 (치타부터 나무늘보까지 7단계!)</p>
     <button>도전!</button>`);
   $("card-slot").querySelector("button").onclick = (e) => { e.stopPropagation(); mission1Intro(); };
@@ -366,7 +373,8 @@ stage.addEventListener("click", () => {
   else if (phase.startsWith("m2")) m2Click();
   else if (phase === "m3") m3Click();
 });
-intro();
+// 이미지 슬롯 로딩을 기다렸다가 시작 카드 표시 (이모지 대신 그림이 바로 뜨게)
+setTimeout(() => { if (!introShown){ introShown = true; intro(); } }, 900);
 </script>
 </body>
 </html>

@@ -122,11 +122,22 @@ for sub in sorted((ROOT / "content/minigame").iterdir()):
          "emoji": meta.get("emoji", "🎮"),
          "desc": meta.get("desc", ""), "url": url}
     html_src = (sub / "index.html").read_text(encoding="utf-8")
-    # 게임 내부 이미지 슬롯(assets/*.png)을 축소 WebP data URI로 인라인
+    # 게임 내부 이미지 슬롯(assets/*) 인라인 — 게임들이 `assets/떡${i}.png`처럼
+    # 경로를 런타임에 조립하므로 문자열 치환 대신 Image.src 인터셉터로 매핑한다.
     assets_dir = sub / "assets"
     if assets_dir.is_dir():
-        for a in assets_dir.glob("*.png"):
-            html_src = html_src.replace(f"assets/{a.name}", _alpha_thumb_uri(a, 360))
+        amap = {}
+        for a in sorted(assets_dir.iterdir()):
+            if a.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}:
+                amap[a.name] = _alpha_thumb_uri(a, 360)
+        if amap:
+            shim = ("<script>window.__ASSETS__=" + json.dumps(amap, ensure_ascii=False)
+                    + ";(function(){var d=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');"
+                    + "Object.defineProperty(HTMLImageElement.prototype,'src',{"
+                    + "set:function(v){var m=String(v).match(/(?:^|\\/)assets\\/([^\\/]+)$/);"
+                    + "d.set.call(this,(m&&window.__ASSETS__[decodeURIComponent(m[1])])||v);},"
+                    + "get:function(){return d.get.call(this);}});})();</script>")
+            html_src = html_src.replace("<body>", "<body>" + shim, 1)
     if (sub / "icon.png").exists():
         g["icon"] = _alpha_thumb_uri(sub / "icon.png", 280)
     games.append(g)
@@ -198,7 +209,8 @@ window.fetch = (url, opts) => {{
     try {{
       const b = JSON.parse(opts.body);
       DEMO.lastDosan = b.dosan;
-      DEMO.lastMeta = b.meta || {{}};
+      // 실제 서버와 동일: title·line·note가 최상위 필드로 온다
+      DEMO.lastMeta = {{ title: b.title || "", line: b.line || "", note: b.note || "" }};
     }} catch (e) {{}}
     setTimeout(demoPrint, 400); // 실제 부스처럼 도안 결과지를 프린터로
     return _json({{ ok: true, number: DEMO.number, printed: true }});
@@ -229,7 +241,9 @@ function demoPrint() {{
   document.body.appendChild(f);
   const d = f.contentDocument;
   d.open();
-  d.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+  d.write(applyFontUris(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    @font-face {{ font-family:"esamanru"; font-weight:400 600; src:url("__FONT_medium__") format("woff2"); }}
+    @font-face {{ font-family:"esamanru"; font-weight:700 900; src:url("__FONT_bold__") format("woff2"); }}
     @page {{ size: 182mm 257mm; margin: 0; }}
     * {{ box-sizing: border-box; }}
     body {{ margin:0; width:182mm; height:257mm; font-family:"esamanru","Pretendard","Malgun Gothic",sans-serif;
@@ -273,9 +287,17 @@ function demoPrint() {{
     <div class="band"><span class="num">No. ${{String(DEMO.number).padStart(3, "0")}}</span>
       <span class="foot">뭉클 떡집 · 제17회 에듀플러스위크 미래교육박람회</span>
       <span class="qr">뭉클 더 알아보기</span></div>
-  </div></body></html>`);
+  </div></body></html>`));
   d.close();
-  setTimeout(() => {{ try {{ f.contentWindow.focus(); f.contentWindow.print(); }} catch (e) {{}} }}, 350);
+  // 이미지·서체 로딩이 끝난 뒤 인쇄 (안 그러면 빈 칸으로 찍힘)
+  setTimeout(async () => {{
+    try {{
+      await d.fonts.ready;
+      await Promise.all([...d.images].map(im => im.decode().catch(() => {{}})));
+      f.contentWindow.focus();
+      f.contentWindow.print();
+    }} catch (e) {{ try {{ f.contentWindow.print(); }} catch (e2) {{}} }}
+  }}, 250);
 }}
 function setGameFrame(url) {{
   document.getElementById("game-frame").srcdoc = applyFontUris(DEMO.gameSrc[url] || "<p>준비 중</p>");

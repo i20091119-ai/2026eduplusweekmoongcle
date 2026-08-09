@@ -78,11 +78,16 @@ const CHARS = [
   { name:"다솜", emoji:"🐹", base:6,  daily:1, desc:"기본 6만 · 매일 1만" },
   { name:"초코", emoji:"🐻", base:0,  daily:2, desc:"기본 0원 · 매일 2만" },
 ];
-/* 이미지 슬롯: assets/캐릭터1~3.png — 있으면 이모지 대신 */
+/* 이미지 슬롯: assets/캐릭터1~3.png — 있으면 이모지 대신 (이미 그려진 버튼도 갱신) */
 CHARS.forEach((c, i) => {
   const im = new Image();
   im.src = `assets/캐릭터${i + 1}.png`;
-  im.onload = () => { c.img = im.src; };
+  im.onload = () => {
+    c.img = im.src;
+    const b = document.querySelectorAll(".char-row button")[i];
+    if (b) b.innerHTML = `<img src="${c.img}" style="height:96px" draggable="false">` +
+      `<span>${c.name}</span><small>${c.desc}</small>`;
+  };
 });
 let st = null;
 
