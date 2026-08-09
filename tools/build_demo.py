@@ -84,6 +84,19 @@ for c in maker.get("worldcup", {}).get("candidates", []):
     f = ROOT / "content" / "dosan" / c.get("pdf", "")
     if c.get("pdf") and f.exists():
         c["img"] = _thumb_data_uri(f)
+
+
+# content/ui 슬롯 이미지 인라인 — maker JSON 안 경로 + kiosk.js 안 경로 모두
+def _inline_ui(o):
+    if isinstance(o, dict):
+        return {k: _inline_ui(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [_inline_ui(v) for v in o]
+    if isinstance(o, str) and o.startswith("/content/ui/"):
+        f = ROOT / "content" / "ui" / o.removeprefix("/content/ui/")
+        if f.exists():
+            return _alpha_thumb_uri(f, 420)
+    return o
 def _alpha_thumb_uri(p, size=480):
     """투명 배경 유지 축소 인라인 (WebP) — 데모 파일 크기 억제."""
     import io as _io
@@ -133,6 +146,14 @@ game_src = {
 }
 
 
+maker = _inline_ui(maker)
+# kiosk.js의 applyUiSlots가 참조하는 /content/ui/ 경로도 실제 파일이 있으면 인라인
+for _p in (ROOT / "content/ui").rglob("*.png"):
+    _rel = "/content/ui/" + _p.relative_to(ROOT / "content/ui").as_posix()
+    if _rel in js:
+        js = js.replace(_rel, _alpha_thumb_uri(_p, 420))
+
+
 def js_dump(o):  # 문자열 내 </script> 로 바깥 스크립트가 닫히는 것 방지
     return json.dumps(o, ensure_ascii=False).replace("</", "<\\/")
 
@@ -174,11 +195,69 @@ window.fetch = (url, opts) => {{
   if (u.includes("/api/call"))     return _json({{ ok: true, station: "A", number: DEMO.number }});
   if (u.includes("/api/complete")) {{
     DEMO.number++;
-    try {{ DEMO.lastDosan = JSON.parse(opts.body).dosan; }} catch (e) {{}}
+    try {{
+      const b = JSON.parse(opts.body);
+      DEMO.lastDosan = b.dosan;
+      DEMO.lastMeta = b.meta || {{}};
+    }} catch (e) {{}}
+    setTimeout(demoPrint, 400); // 실제 부스처럼 도안 결과지를 프린터로
     return _json({{ ok: true, number: DEMO.number, printed: true }});
   }}
   return _json({{}});
 }};
+/* ── 데모 자동 인쇄: 결과지(B5 조판)를 숨은 iframe으로 만들어 프린터로 보낸다.
+ * 크롬을 --kiosk-printing 옵션으로 실행하면 대화상자 없이 기본 프린터로 바로 출력. ── */
+function demoDosanImg(path) {{
+  if (!path) return "";
+  for (const conf of Object.values(DEMO.maker)) {{
+    for (const r of Object.values(conf.results || {{}}))
+      if (r.pdf === path && r.img) return r.img;
+    for (const c of (conf.candidates || []))
+      if (c.pdf === path && c.img) return c.img;
+  }}
+  return "";
+}}
+function demoPrint() {{
+  const meta = DEMO.lastMeta || {{}};
+  const img = demoDosanImg(DEMO.lastDosan);
+  const logo = document.querySelector(".logo-badge");
+  const old = document.getElementById("print-frame");
+  if (old) old.remove();
+  const f = document.createElement("iframe");
+  f.id = "print-frame";
+  f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+  document.body.appendChild(f);
+  const d = f.contentDocument;
+  d.open();
+  d.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    @page {{ size: 182mm 257mm; margin: 0; }}
+    body {{ margin:0; width:182mm; height:257mm; font-family:"esamanru","Pretendard","Malgun Gothic",sans-serif;
+      display:flex; flex-direction:column; align-items:center; text-align:center; }}
+    .logo {{ height:26mm; margin-top:8mm; }}
+    .sub {{ color:#8a7666; font-size:8.5pt; margin:2mm 0 3mm; }}
+    h1 {{ font-size:23pt; margin:0 0 2mm; color:#111; }}
+    .line {{ color:#7E212F; font-size:11pt; font-weight:700; margin-bottom:4mm; }}
+    .frame {{ width:150mm; height:118mm; border:1.5pt solid #7E212F; border-radius:5mm;
+      display:flex; align-items:center; justify-content:center; }}
+    .frame img {{ max-width:140mm; max-height:110mm; }}
+    .note {{ width:150mm; background:#FBF6EC; border:1px solid #E3D5C0; border-radius:3mm;
+      font-size:10pt; color:#4a3a30; padding:4mm 6mm; margin-top:5mm; line-height:1.6; }}
+    .stamp {{ display:flex; width:150mm; justify-content:space-between; align-items:center; margin-top:auto; margin-bottom:7mm; }}
+    .num {{ background:#7E212F; color:#fff; font-size:17pt; font-weight:800; border-radius:3mm; padding:4mm 12mm; }}
+    .qr {{ font-size:8pt; color:#555; }}
+  </style></head><body>
+    ${{logo ? `<img class="logo" src="${{logo.src}}">` : ""}}
+    <div class="sub">나만의 클리커 도안 · 에듀플러스위크 2026 (데모 인쇄)</div>
+    <h1>${{meta.title || ""}}</h1>
+    <div class="line">${{meta.line || ""}}</div>
+    <div class="frame">${{img ? `<img src="${{img}}">` : "<span style='color:#bbb'>도안 미리보기 없음</span>"}}</div>
+    ${{meta.note ? `<div class="note">${{meta.note}}</div>` : ""}}
+    <div class="stamp"><span class="num">No. ${{String(DEMO.number).padStart(3, "0")}}</span>
+      <span class="qr">뭉클 더 알아보기</span></div>
+  </body></html>`);
+  d.close();
+  setTimeout(() => {{ try {{ f.contentWindow.focus(); f.contentWindow.print(); }} catch (e) {{}} }}, 350);
+}}
 function setGameFrame(url) {{
   document.getElementById("game-frame").srcdoc = applyFontUris(DEMO.gameSrc[url] || "<p>준비 중</p>");
 }}

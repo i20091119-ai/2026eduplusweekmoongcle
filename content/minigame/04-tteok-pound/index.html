@@ -58,6 +58,19 @@ const $ = id => document.getElementById(id);
 })();
 // 절구는 달토끼 캐릭터가 이미 들고 있어 별도 표시 없음
 function setMortar(t){}
+// 배경 이미지 슬롯: assets/배경.jpg — 있으면 하늘색 대신 달밤 배경 + 글자 대비 보정
+(function(){
+  const img = new Image();
+  img.src = "assets/배경.jpg";
+  img.onload = () => {
+    document.body.style.background = `url(${img.src}) center / cover no-repeat`;
+    document.querySelector("header").style.color = "#FFE9EC";
+    $("help").style.color = "#EAF3FA";
+    const fb = document.createElement("style");
+    fb.textContent = "#feedback { color:#F2C744; } #feedback.miss { color:#ff9d8a; }";
+    document.head.appendChild(fb);
+  };
+})();
 const W = 640, TOTAL = 15;
 let round = 1, score = 0, x = 0, dir = 1, speed = 4.2, playing = false, raf = null, lock = false;
 let goodW = 150, perfW = 56;

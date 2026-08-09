@@ -58,10 +58,24 @@ function applyUiSlots() {
     st.textContent = `.keypad button { background: url(${im.src}) center / 100% 100% no-repeat; box-shadow: none; }`;
     document.head.appendChild(st);
   });
+  // 코드 화면 토끼: 전용 슬롯(코드입력_토끼) 우선, 없으면 공용 달토끼
+  slotImg("/content/ui/코드입력_토끼.png", im => {
+    im.className = "code-rabbit-img";
+    $("code-rabbit").textContent = "";
+    $("code-rabbit").replaceChildren(im);
+  });
   slotImg("/content/character/달토끼.png", im => {
+    if ($("code-rabbit").querySelector("img")) return; // 전용 슬롯이 이미 적용됨
     im.className = "code-rabbit-img";
     $("code-rabbit").textContent = "";
     $("code-rabbit").appendChild(im);
+  });
+  // 부저 화면 호출 버튼: 종 이미지 슬롯
+  slotImg("/content/ui/부저_종.png", im => {
+    im.style.height = "150px";
+    const b = $("btn-buzzer");
+    b.innerHTML = "호출<br>";
+    b.appendChild(im);
   });
 }
 let current = "attract";

@@ -17,8 +17,11 @@
   --bg: #ACD6E8;           /* 하늘색 바탕 */
   --card: #FFF9EF;         /* 크림 카드 */
 }
-* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-html, body { width: 100%; height: 100%; overflow: hidden; }
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none;
+  touch-action: manipulation; /* 태블릿: 더블탭 확대·지연 제거 */
+  -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden;
+  overscroll-behavior: none; /* 태블릿 당겨서 새로고침 방지 */ }
 body {
   font-family: "esamanru", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
   background: var(--bg); color: var(--ink);
