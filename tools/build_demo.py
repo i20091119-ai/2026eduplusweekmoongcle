@@ -61,7 +61,7 @@ window.WebSocket = class {{ constructor() {{ this.readyState = 0; }} send() {{}}
 const _json = (data) => Promise.resolve({{ ok: true, status: 200, json: async () => data }});
 window.fetch = (url, opts) => {{
   const u = String(url);
-  if (u.includes("/api/config"))    return _json({{ stations: ["A","B"], called_seconds: 8, brand_color: "#F5573B" }});
+  if (u.includes("/api/config"))    return _json({{ stations: ["A","B"], called_seconds: 8, brand_color: "#F5573B", code_length: {max(len(c) for c in codes)} }});
   if (u.includes("/api/intro"))     return _json({{ intro: DEMO.intro }});
   if (u.includes("/api/maker"))     return _json({{ maker: DEMO.maker }});
   if (u.includes("/api/dosan"))     return _json({{ dosan: DEMO.dosan }});
@@ -90,14 +90,14 @@ demo_ui = """
 /* ═══ 데모 조작부 ═══ */
 const bar = document.createElement("div");
 bar.id = "demo-bar";
-bar.innerHTML = `<span class="demo-chip">🎪 데모 — 코드: <b>347 · 582 · 915 · 264 · 738</b></span>
+bar.innerHTML = `<span class="demo-chip">🎪 데모 — 코드: <b>__CODES__</b></span>
   <button id="demo-call">🔔 부저 누르기 (호출 시뮬레이션)</button>`;
 document.body.appendChild(bar);
 document.getElementById("demo-call").addEventListener("click", () => {
   ensureAudio();
   onCalled(myNumber || DEMO.number);
 });
-"""
+""".replace("__CODES__", " · ".join(codes))
 
 demo_css = """
 /* 데모 조작부 — 실제 부스 화면에는 없음 */

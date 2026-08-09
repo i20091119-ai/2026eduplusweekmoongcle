@@ -2,13 +2,12 @@
 
 도안 만들기 프로그램 3종(성격검사·월드컵·감정)의 모든 결과에 대응하는
 자리표시 도안을 content/dosan/<분류>/ 에 생성한다.
-규격 (설계명세서 3.4): A4 세로 · 본문 흑백 라인아트 · 하단 30mm 비움.
+규격: B5 세로(JIS 182×257mm — 출력 확정) · 본문 흑백 라인아트 · 하단 30mm 비움.
 사용:  python tools/make_sample_dosan.py
 """
 from pathlib import Path
 
 from reportlab.lib.colors import black
-from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
@@ -18,7 +17,8 @@ FONT = "HYGothic-Medium"
 pdfmetrics.registerFont(UnicodeCIDFont(FONT))
 
 OUT = Path(__file__).resolve().parent.parent / "content" / "dosan"
-W, H = A4
+PAGE = (182 * mm, 257 * mm)  # JIS B5 세로
+W, H = PAGE
 BOTTOM = 30 * mm  # 하단 여백 — 시스템이 번호·QR 스탬프
 
 ITEMS = {
@@ -32,7 +32,7 @@ def make(category: str, name: str):
     d = OUT / category
     d.mkdir(parents=True, exist_ok=True)
     path = d / f"{name}.pdf"
-    c = canvas.Canvas(str(path), pagesize=A4)
+    c = canvas.Canvas(str(path), pagesize=PAGE)
     c.setStrokeColor(black)
 
     c.setFont(FONT, 24)

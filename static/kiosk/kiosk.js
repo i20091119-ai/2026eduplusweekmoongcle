@@ -13,6 +13,7 @@ const STATION = (params.get("station") || "A").toUpperCase();
 const IDLE_LIMIT_MS = 90 * 1000; // 어트랙트 자동 복귀 (대기 화면 제외)
 
 let calledSeconds = 12;
+let codeLen = 4; // 서버 /api/config가 quiz.json 코드 길이로 알려줌
 let introImages = [];
 let introIdx = 0;
 let waitIntroIdx = 0;
@@ -96,8 +97,19 @@ $("btn-intro-next").addEventListener("click", () => {
 $("btn-to-code").addEventListener("click", startCode);
 
 /* ── ③ 코드 입력 ── */
+function buildCodeDisplay() {
+  const disp = $("code-display");
+  disp.innerHTML = "";
+  for (let i = 0; i < codeLen; i++) {
+    const s = document.createElement("span");
+    s.className = "digit";
+    disp.appendChild(s);
+  }
+  $("code-title").textContent = `몬스터가 알려준 ${codeLen}자리 코드를 입력하세요`;
+}
 function startCode() {
   code = "";
+  buildCodeDisplay();
   renderCode();
   setCodeMsg("스마트폰으로 몬스터에 접촉해 퀴즈를 풀면 코드를 받아요 📱", "");
   show("code");
@@ -125,10 +137,10 @@ function buildKeypad() {
 }
 async function pressKey(k) {
   if (k === "del") { code = code.slice(0, -1); renderCode(); return; }
-  if (code.length >= 3) return;
+  if (code.length >= codeLen) return;
   code += k;
   renderCode();
-  if (code.length === 3) await verifyCode();
+  if (code.length === codeLen) await verifyCode();
 }
 async function verifyCode() {
   try {
@@ -439,6 +451,7 @@ async function init() {
   try {
     const conf = await (await fetch("/api/config")).json();
     calledSeconds = conf.called_seconds || 12;
+    codeLen = conf.code_length || 4;
   } catch (e) { /* 기본값 유지 */ }
   try {
     introImages = (await (await fetch("/api/intro")).json()).intro;

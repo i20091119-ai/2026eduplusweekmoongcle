@@ -1,7 +1,7 @@
 """뭉클 부스 서버 — 코드 검증 · 대기열 · 인쇄 · WebSocket 호출 동기화.
 
 역할 (설계명세서 3.1):
-- 코드 검증 API (스마트폰 NFC 퀴즈에서 받은 세자리 정답코드)
+- 코드 검증 API (스마트폰 NFC 퀴즈에서 받은 4자리 정답코드)
 - 도안 목록 · 스탬프 · 인쇄
 - 좌석 점유 대기열(FIFO, 스테이션당 1) · 호출
 - WebSocket 으로 키오스크 실시간 동기화
@@ -180,10 +180,13 @@ def health():
 
 @app.get("/api/config")
 def get_config():
+    codes = load_codes()
     return {
         "stations": config.STATIONS,
         "called_seconds": config.CALLED_SCREEN_SECONDS,
         "brand_color": config.BRAND_COLOR,
+        # 키패드 자릿수 — quiz.json 코드 길이를 따라감
+        "code_length": max((len(c) for c in codes), default=4),
     }
 
 

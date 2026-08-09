@@ -11,6 +11,9 @@ DB_PATH = DATA_DIR / "booth.db"
 
 # 인쇄
 PRINTER_NAME = os.environ.get("BOOTH_PRINTER", "booth")
+# 용지 — 도안 출력은 B5 (국내 B5 = JIS B5 182×257mm가 일반적. 프린터가 ISO B5로
+# 잡으면 BOOTH_PAPER=iso_b5_176x250mm 로 변경)
+PAPER = os.environ.get("BOOTH_PAPER", "jis_b5_182x257mm")
 # 설계명세서 4장: 본문은 흑백 라인아트, 번호 블록만 브랜드 컬러 → 컬러 모드로 보내되 원본이 흑백
 PRINT_COLOR_MODE = os.environ.get("BOOTH_PRINT_COLOR_MODE", "color")
 # 개발/리허설용: 1이면 실제 인쇄 대신 로그만 남기고 data/printed/ 에 PDF 보관

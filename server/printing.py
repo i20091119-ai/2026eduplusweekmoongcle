@@ -30,7 +30,7 @@ def print_pdf(path: Path) -> bool:
                 "lp",
                 "-d", config.PRINTER_NAME,
                 "-o", f"print-color-mode={config.PRINT_COLOR_MODE}",
-                "-o", "media=A4",
+                "-o", f"media={config.PAPER}",
                 str(path),
             ]
         subprocess.run(cmd, check=True, capture_output=True, timeout=30)
