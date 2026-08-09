@@ -29,16 +29,20 @@ queue_db.init()
 # ─────────────────────────── 콘텐츠 스캔 ───────────────────────────
 # 서버 시작 시 + 요청 시마다 폴더를 읽는다 (파일 교체만으로 반영 — 3.4)
 
-def load_codes() -> dict[str, str]:
-    """content/quiz/quiz.json → {"코드": "몬스터 이름"}"""
+def load_codes() -> set[str]:
+    """content/quiz/quiz.json → 통과시킬 코드 집합.
+
+    형식은 리스트(["0228", ...]) 권장 — 구버전 딕셔너리({"0228": "이름"})도 허용.
+    """
     f = config.CONTENT_DIR / "quiz" / "quiz.json"
     if not f.exists():
-        return {}
+        return set()
     try:
-        return json.loads(f.read_text(encoding="utf-8")).get("codes", {})
+        codes = json.loads(f.read_text(encoding="utf-8")).get("codes", [])
+        return set(codes)  # dict이면 키(코드)만 사용
     except Exception as e:  # 손상된 JSON 이어도 서버는 계속 (무고장 우선)
         log.error("quiz.json 파싱 실패: %s", e)
-        return {}
+        return set()
 
 
 def list_dosan() -> list[dict]:
@@ -192,13 +196,11 @@ def get_config():
 
 @app.post("/api/code/verify")
 async def verify_code(body: CodeIn):
-    codes = load_codes()
-    monster = codes.get(body.code.strip())
-    if monster is None:
+    if body.code.strip() not in load_codes():
         return {"ok": False}
     if body.station:  # LED 브리지가 초록 플래시로 반응
         await hub.broadcast({"type": "correct", "station": body.station})
-    return {"ok": True, "monster": monster}
+    return {"ok": True}
 
 
 @app.get("/api/dosan")

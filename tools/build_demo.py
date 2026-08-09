@@ -67,8 +67,7 @@ window.fetch = (url, opts) => {{
   if (u.includes("/api/dosan"))     return _json({{ dosan: DEMO.dosan }});
   if (u.includes("/api/minigames")) return _json({{ minigames: DEMO.games }});
   if (u.includes("/api/code/verify")) {{
-    const m = DEMO.codes[JSON.parse(opts.body).code];
-    return _json(m ? {{ ok: true, monster: m }} : {{ ok: false }});
+    return _json({{ ok: DEMO.codes.includes(JSON.parse(opts.body).code) }});
   }}
   if (u.includes("/api/complete")) {{ DEMO.number++; return _json({{ ok: true, number: DEMO.number, printed: true }}); }}
   return _json({{}});

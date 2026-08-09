@@ -151,7 +151,7 @@ async function verifyCode() {
     });
     const j = await r.json();
     if (j.ok) {
-      setCodeMsg(`정답! ${j.monster} 몬스터를 만났군요 🎉`, "ok");
+      setCodeMsg("정답입니다! 🎉", "ok");
       setTimeout(() => startMaker(), 900);
     } else {
       setCodeMsg("코드가 맞지 않아요 — 다시 확인해 주세요", "bad");

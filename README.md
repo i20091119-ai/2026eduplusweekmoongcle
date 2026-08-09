@@ -17,7 +17,7 @@ content/           콘텐츠 — 파일 교체만으로 반영, 코드 수정·�
   ├ dosan/         도안 PDF (B5 세로 · 흑백 라인아트 · 하단 30mm 비움)
   │                 동물/ 음식/ 감정/ 하위 폴더 = 도안 만들기 프로그램별 결과물
   ├ maker/         도안 만들기 프로그램 3종 설정 (personality · worldcup · emotion JSON)
-  ├ quiz/          quiz.json — NFC 정답코드 5개 (4자리 확정)
+  ├ quiz/          quiz.json — 통과 코드 목록 (현재 4자리 5종 · 몬스터 수와 무관)
   ├ intro/         뭉클 소개 이미지 (알아보기 + 대기 화면)
   └ minigame/      미니게임 6종 (폴더당 game.json + index.html)
 arduino/           MCU 스케치 — quiz_led(Q1·Q2 LED 3종 연출) · button_caller(Q3 부저)
