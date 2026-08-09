@@ -268,7 +268,12 @@ function runPersonality(conf) {
   show("maker");
 }
 
-/* 유형검사: 군별 합계 → 음수면 neg 글자, 0 이상이면 pos 글자 (검사지 채점 규칙 그대로) */
+/* 유형검사: 문항당 7점 척도(-3~+3, 검사지 그대로) →
+ * 군별 합계 음수면 neg 글자, 0 이상이면 pos 글자 (검사지 채점 규칙) */
+const SCALE_CAPTIONS = {
+  "-3": "매우<br>그렇다", "-2": "가깝다", "-1": "굳이<br>고르면",
+  "0": "잘 모르<br>겠다", "1": "굳이<br>고르면", "2": "가깝다", "3": "매우<br>그렇다",
+};
 function runTypeTest(conf) {
   $("maker-title").textContent = conf.title;
   const flat = [];
@@ -283,16 +288,24 @@ function runTypeTest(conf) {
   }
   function ask() {
     const { q } = flat[qi];
-    const prog = el("div", "maker-progress", `${qi + 1} / ${flat.length}`);
-    const question = el("div", "maker-q", "나는 어느 쪽에 가까울까?");
-    const choices = el("div", "maker-choices");
-    choices.appendChild(bigChoice("", q.l, "", () => answer(-1)));
-    choices.appendChild(bigChoice("", q.r, "", () => answer(+1)));
-    const skip = document.createElement("button");
-    skip.className = "skip-btn";
-    skip.textContent = "🤷 둘 다 비슷해요";
-    skip.addEventListener("click", () => { clickBeep(); answer(0); });
-    makerBody(prog, question, choices, skip);
+    const prog = el("div", "maker-progress", `${qi + 1} / ${flat.length} · 더 가까운 쪽에 표시하세요`);
+    const stmts = el("div", "type-stmts");
+    stmts.appendChild(el("div", "stmt stmt-l", q.l));
+    stmts.appendChild(el("div", "stmt-vs", "VS"));
+    stmts.appendChild(el("div", "stmt stmt-r", q.r));
+    const scale = el("div", "type-scale");
+    for (let v = -3; v <= 3; v++) {
+      const wrap = el("div", "scale-item");
+      const b = document.createElement("button");
+      b.className = "scale-btn " + (v < 0 ? "s-left" : v > 0 ? "s-right" : "s-zero");
+      b.classList.add("mag" + Math.abs(v));
+      b.textContent = v > 0 ? `+${v}` : `${v}`;
+      b.addEventListener("click", () => { clickBeep(); answer(v); });
+      wrap.appendChild(b);
+      wrap.appendChild(el("small", "", SCALE_CAPTIONS[String(v)]));
+      scale.appendChild(wrap);
+    }
+    makerBody(prog, stmts, scale);
   }
   function finish() {
     const type = conf.axes.map((ax, i) => (sums[i] < 0 ? ax.neg : ax.pos)).join("");

@@ -113,6 +113,27 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
   border-radius: 14px; padding: 12px 22px; box-shadow: 0 3px 0 rgba(0,0,0,.08); }
 .skip-btn { font-size: 20px; font-weight: 700; padding: 12px 28px; background: #e9f2f7;
   color: #35505f; border-radius: 999px; }
+
+/* 유형검사 7점 척도 (검사지 -3~+3 그대로) */
+.type-stmts { display: flex; align-items: stretch; gap: 18px; max-width: 1150px; width: 100%; }
+.stmt { flex: 1; background: var(--card); border-radius: 18px; padding: 26px 24px;
+  font-size: 27px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  text-align: center; line-height: 1.4; box-shadow: 0 4px 0 rgba(0,0,0,.1); min-height: 120px; }
+.stmt-l { border-bottom: 6px solid var(--brand); }
+.stmt-r { border-bottom: 6px solid #4a90b8; }
+.stmt-vs { align-self: center; font-size: 26px; font-weight: 900; color: #6a8a9a; }
+.type-scale { display: flex; align-items: flex-start; gap: 16px; }
+.scale-item { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 104px; }
+.scale-item small { font-size: 14px; font-weight: 700; color: #4c6b7d; text-align: center; line-height: 1.25; }
+.scale-btn { border-radius: 50%; font-weight: 900; color: #fff; border: none; }
+.scale-btn.mag3 { width: 96px; height: 96px; font-size: 30px; }
+.scale-btn.mag2 { width: 80px; height: 80px; font-size: 26px; margin-top: 8px; }
+.scale-btn.mag1 { width: 66px; height: 66px; font-size: 22px; margin-top: 15px; }
+.scale-btn.mag0 { width: 60px; height: 60px; font-size: 20px; margin-top: 18px; }
+.scale-btn.s-left { background: var(--brand); }
+.scale-btn.s-right { background: #4a90b8; }
+.scale-btn.s-zero { background: #9aa8b0; }
+.scale-btn:hover { filter: brightness(1.15); }
 .dosan-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
 .dosan-grid button { font-size: 28px; font-weight: 800; padding: 26px 34px;
   min-width: 220px; min-height: 110px; border: 4px solid transparent; }
@@ -619,7 +640,12 @@ function runPersonality(conf) {
   show("maker");
 }
 
-/* 유형검사: 군별 합계 → 음수면 neg 글자, 0 이상이면 pos 글자 (검사지 채점 규칙 그대로) */
+/* 유형검사: 문항당 7점 척도(-3~+3, 검사지 그대로) →
+ * 군별 합계 음수면 neg 글자, 0 이상이면 pos 글자 (검사지 채점 규칙) */
+const SCALE_CAPTIONS = {
+  "-3": "매우<br>그렇다", "-2": "가깝다", "-1": "굳이<br>고르면",
+  "0": "잘 모르<br>겠다", "1": "굳이<br>고르면", "2": "가깝다", "3": "매우<br>그렇다",
+};
 function runTypeTest(conf) {
   $("maker-title").textContent = conf.title;
   const flat = [];
@@ -634,16 +660,24 @@ function runTypeTest(conf) {
   }
   function ask() {
     const { q } = flat[qi];
-    const prog = el("div", "maker-progress", `${qi + 1} / ${flat.length}`);
-    const question = el("div", "maker-q", "나는 어느 쪽에 가까울까?");
-    const choices = el("div", "maker-choices");
-    choices.appendChild(bigChoice("", q.l, "", () => answer(-1)));
-    choices.appendChild(bigChoice("", q.r, "", () => answer(+1)));
-    const skip = document.createElement("button");
-    skip.className = "skip-btn";
-    skip.textContent = "🤷 둘 다 비슷해요";
-    skip.addEventListener("click", () => { clickBeep(); answer(0); });
-    makerBody(prog, question, choices, skip);
+    const prog = el("div", "maker-progress", `${qi + 1} / ${flat.length} · 더 가까운 쪽에 표시하세요`);
+    const stmts = el("div", "type-stmts");
+    stmts.appendChild(el("div", "stmt stmt-l", q.l));
+    stmts.appendChild(el("div", "stmt-vs", "VS"));
+    stmts.appendChild(el("div", "stmt stmt-r", q.r));
+    const scale = el("div", "type-scale");
+    for (let v = -3; v <= 3; v++) {
+      const wrap = el("div", "scale-item");
+      const b = document.createElement("button");
+      b.className = "scale-btn " + (v < 0 ? "s-left" : v > 0 ? "s-right" : "s-zero");
+      b.classList.add("mag" + Math.abs(v));
+      b.textContent = v > 0 ? `+${v}` : `${v}`;
+      b.addEventListener("click", () => { clickBeep(); answer(v); });
+      wrap.appendChild(b);
+      wrap.appendChild(el("small", "", SCALE_CAPTIONS[String(v)]));
+      scale.appendChild(wrap);
+    }
+    makerBody(prog, stmts, scale);
   }
   function finish() {
     const type = conf.axes.map((ax, i) => (sums[i] < 0 ? ax.neg : ax.pos)).join("");
