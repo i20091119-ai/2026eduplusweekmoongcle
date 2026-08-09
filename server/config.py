@@ -23,7 +23,7 @@ SUMATRA_PATH = os.environ.get(
 )
 
 # 도안 하단 스탬프
-BRAND_COLOR = os.environ.get("BOOTH_BRAND_COLOR", "#F5573B")  # 뭉클 브랜드 컬러로 교체
+BRAND_COLOR = os.environ.get("BOOTH_BRAND_COLOR", "#7E212F")  # 뭉클 떡집 버건디
 QR_URL = os.environ.get("BOOTH_QR_URL", "https://moongcle.com")
 QR_CAPTION = os.environ.get("BOOTH_QR_CAPTION", "뭉클 더 알아보기")
 

@@ -1,10 +1,12 @@
-/* 뭉클 부스 키오스크 — 기준 1280×720, 대형 글자·대형 버튼 (설계명세서 2.3) */
+/* 뭉클 떡집 키오스크 — 기준 1280×720, 대형 글자·대형 버튼 (설계명세서 2.3)
+ * 팔레트: 떡집 브랜드 (버건디 · 달 노랑 · 하늘색 · 크림) — 디자인팀 시안 기준 */
 :root {
-  --brand: #F5573B;
-  --brand-dark: #d9422a;
-  --ink: #2b2b2b;
-  --bg: #FFF8F0;
-  --card: #ffffff;
+  --brand: #7E212F;        /* 버건디 — 간판·번호블록 */
+  --brand-dark: #5e1722;
+  --moon: #F2C744;         /* 달 노랑 — 포인트 */
+  --ink: #3d2723;          /* 진갈색 글자 */
+  --bg: #ACD6E8;           /* 하늘색 바탕 */
+  --card: #FFF9EF;         /* 크림 카드 */
 }
 * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
 html, body { width: 100%; height: 100%; overflow: hidden; }
@@ -29,12 +31,18 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
 .pulse { animation: pulse 1.6s infinite; }
 @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 
-/* ① 어트랙트 */
+/* ① 어트랙트 — 떡집 간판 무드 */
 #screen-attract { align-items: center; justify-content: center; text-align: center;
-  background: radial-gradient(circle at 50% 30%, #fff 0%, var(--bg) 70%); }
-.attract-logo { font-size: 90px; font-weight: 900; color: var(--brand); letter-spacing: 6px; }
-#screen-attract h1 { font-size: 46px; line-height: 1.35; margin: 24px 0 48px; }
-.attract-hint { margin-top: 28px; font-size: 22px; color: #888; }
+  background: radial-gradient(circle at 50% 28%, #cde8f4 0%, var(--bg) 70%); }
+.attract-logo-row { display: flex; align-items: center; justify-content: center; gap: 20px; }
+.attract-logo { font-size: 88px; font-weight: 900; color: var(--ink); letter-spacing: 4px;
+  text-shadow: 3px 3px 0 rgba(0,0,0,.15); }
+.logo-badge { width: 110px; height: 110px; }
+.attract-bubbles { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }
+.attract-bubbles span { background: #fff; border-radius: 999px; padding: 8px 16px;
+  font-size: 22px; font-weight: 800; color: var(--ink); box-shadow: 0 3px 0 rgba(0,0,0,.12); }
+#screen-attract h1 { font-size: 44px; line-height: 1.35; margin: 20px 0 44px; }
+.attract-hint { margin-top: 28px; font-size: 22px; color: #4c6b7d; }
 
 /* 공통 헤더/푸터 */
 .step-header { font-size: 34px; font-weight: 800; padding: 26px 40px; }
@@ -53,16 +61,16 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
 .code-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
 .code-display { display: flex; gap: 18px; }
 .code-display .digit {
-  width: 90px; height: 110px; background: #fff; border-radius: 16px;
-  border: 4px solid #e5d8cc; font-size: 64px; font-weight: 900;
+  width: 90px; height: 110px; background: var(--card); border-radius: 16px;
+  border: 4px solid var(--moon); font-size: 64px; font-weight: 900;
   display: flex; align-items: center; justify-content: center;
 }
 .code-display.error .digit { border-color: var(--brand); animation: shake .4s; }
 @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-12px)} 75%{transform:translateX(12px)} }
 .keypad { display: grid; grid-template-columns: repeat(3, 110px); gap: 14px; }
 .keypad button { font-size: 40px; font-weight: 800; height: 86px; }
-.keypad .key-del { font-size: 30px; background: #f1e4d7; }
-.code-msg { font-size: 24px; color: #7a6a5c; min-height: 32px; }
+.keypad .key-del { font-size: 30px; background: #f3e2c8; }
+.code-msg { font-size: 24px; color: #35505f; min-height: 32px; }
 .code-msg.ok { color: #2e9e44; font-weight: 800; }
 .code-msg.bad { color: var(--brand); font-weight: 800; }
 
@@ -111,8 +119,8 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
 .wait-number { background: #fff; color: var(--brand); font-weight: 900;
   font-size: 32px; border-radius: 12px; padding: 8px 20px; }
 .wait-tabs { display: flex; gap: 14px; padding: 16px 30px 0; }
-.tab { font-size: 26px; font-weight: 700; padding: 16px 34px; background: #f1e4d7; }
-.tab.active { background: var(--card); box-shadow: 0 4px 0 var(--brand); }
+.tab { font-size: 26px; font-weight: 700; padding: 16px 34px; background: #cfe6f1; }
+.tab.active { background: var(--card); box-shadow: 0 4px 0 var(--moon); }
 .game-menu { flex: 1; display: flex; flex-wrap: wrap; gap: 22px;
   align-items: center; justify-content: center; padding: 20px 50px; overflow: auto; }
 .game-menu button {

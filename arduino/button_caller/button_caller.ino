@@ -84,13 +84,13 @@ void loop() {
   strip.show();
 }
 
-/* 대기: 은은한 주황 펄스 */
+/* 대기: 은은한 달 노랑 펄스 (떡집 팔레트) */
 void drawIdle() {
   int ph = (frame * 2) & 0xFF;
   int s = ph < 128 ? ph : 255 - ph;
   int lvl = 30 + s * 120 / 127;
   for (int i = 0; i < NUM_LEDS; i++)
-    strip.setPixelColor(i, lvl, lvl * 28 / 100, 0);
+    strip.setPixelColor(i, lvl, lvl * 70 / 100, 0);
 }
 
 void drawFeedback() {

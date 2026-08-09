@@ -61,7 +61,7 @@ window.WebSocket = class {{ constructor() {{ this.readyState = 0; }} send() {{}}
 const _json = (data) => Promise.resolve({{ ok: true, status: 200, json: async () => data }});
 window.fetch = (url, opts) => {{
   const u = String(url);
-  if (u.includes("/api/config"))    return _json({{ stations: ["A","B"], called_seconds: 8, brand_color: "#F5573B", code_length: {max(len(c) for c in codes)} }});
+  if (u.includes("/api/config"))    return _json({{ stations: ["A","B"], called_seconds: 8, brand_color: "#7E212F", code_length: {max(len(c) for c in codes)} }});
   if (u.includes("/api/intro"))     return _json({{ intro: DEMO.intro }});
   if (u.includes("/api/maker"))     return _json({{ maker: DEMO.maker }});
   if (u.includes("/api/dosan"))     return _json({{ dosan: DEMO.dosan }});
@@ -105,12 +105,16 @@ demo_css = """
   padding: 8px; background: rgba(43,43,43,.92); }
 #demo-bar .demo-chip { color: #ffd97a; font-size: 15px; }
 #demo-bar button { font-size: 16px; font-weight: 700; padding: 10px 20px;
-  border-radius: 10px; background: #F5573B; color: #fff; box-shadow: none; }
+  border-radius: 10px; background: #7E212F; color: #F2C744; box-shadow: none; }
 .screen { bottom: 48px !important; }
 #screen-called.screen { bottom: 0 !important; }
 """
 
 body = re.search(r"<body>\n(.*)\n<script src=\"kiosk\.js\"></script>", html, re.S).group(1)
+
+# 로고 SVG 인라인 (단일 파일 데모에는 외부 이미지가 없음)
+logo_svg = (ROOT / "static/kiosk/logo.svg").read_text(encoding="utf-8")
+body = body.replace('src="logo.svg"', 'src="data:image/svg+xml;utf8,' + quote(logo_svg) + '"')
 
 page = f"""<!DOCTYPE html>
 <html lang="ko">

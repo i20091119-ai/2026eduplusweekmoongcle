@@ -33,8 +33,9 @@ const unsigned long FLASH_DURATION_MS = 1500;  // 정답 플래시 길이
 
 uint32_t stationColor() {
   // 스테이션 고유색 — 멀리서도 누가 일어날 차례인지 식별 (5.1)
-  if (station == 'B') return strip.Color(0, 90, 255);   // B: 파랑
-  return strip.Color(255, 70, 10);                      // A: 주황(브랜드 계열)
+  // 뭉클 떡집 팔레트: A = 달 노랑, B = 하늘색
+  if (station == 'B') return strip.Color(40, 140, 255);  // B: 하늘색
+  return strip.Color(255, 190, 30);                      // A: 달 노랑
 }
 
 void setup() {

@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620">
-  <rect width="1100" height="620" rx="24" fill="#F3ECFF"/>
-  <text x="550" y="110" text-anchor="middle" font-family="sans-serif" font-size="52" font-weight="900" fill="#5a3a8a">뭉클 몬스터즈를 찾아보세요!</text>
-  <text x="550" y="280" text-anchor="middle" font-family="sans-serif" font-size="110">🐙 🦄 🐸 🦊 🐳</text>
-  <text x="550" y="420" text-anchor="middle" font-family="sans-serif" font-size="34" fill="#2b2b2b">부스 곳곳에 숨은 5마리 몬스터에 스마트폰을 대면</text>
-  <text x="550" y="480" text-anchor="middle" font-family="sans-serif" font-size="34" fill="#2b2b2b">몬스터마다 다른 퀴즈가 나와요!</text>
+  <rect width="1100" height="620" rx="24" fill="#ACD6E8"/>
+  <text x="550" y="110" text-anchor="middle" font-family="sans-serif" font-size="50" font-weight="900" fill="#7E212F">떡 몬스터 4마리를 찾아라!</text>
+  <text x="550" y="280" text-anchor="middle" font-family="sans-serif" font-size="120">🍡 🥮 🍚 🌕</text>
+  <text x="550" y="410" text-anchor="middle" font-family="sans-serif" font-size="32" fill="#3d2723">부스 곳곳에 숨은 떡 몬스터에 스마트폰을 콕! 대면</text>
+  <text x="550" y="470" text-anchor="middle" font-family="sans-serif" font-size="32" fill="#3d2723">몬스터마다 다른 퀴즈가 나와요</text>
+  <rect x="0" y="560" width="1100" height="60" rx="20" fill="#7E212F"/>
 </svg>
