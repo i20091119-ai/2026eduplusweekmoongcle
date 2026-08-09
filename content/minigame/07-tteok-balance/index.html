@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <title>기우뚱 떡시루</title>
 <style>
-/* 균형 저울 게임의 '실시간 기울기 피드백'만 가져온 감각 버전 —
- * 숫자·등식 없음. 떡 크기를 눈으로 가늠해 수평을 맞춘다. 클릭만으로 조작. */
+/* 균형 저울 게임의 '실시간 기울기 피드백' + 그램수 표시 버전 —
+ * 등식은 없지만 떡마다 무게(g)와 양쪽 합계를 보여줘서 조합 퍼즐로 푼다. 클릭만으로 조작. */
 * { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
 html,body { width:100%; height:100%; overflow:hidden; }
 body { background:#FFF9EF; display:flex; flex-direction:column; align-items:center; }
@@ -24,9 +24,14 @@ header { display:flex; gap:30px; padding:12px; font-size:24px; font-weight:800; 
   transition:transform .5s; }
 #pan-left  { left:-16px; }
 #pan-right { right:-16px; }
-.pan .t { line-height:1; }
+.pan .t { line-height:1; display:flex; flex-direction:column; align-items:center; }
+.pan .t small, #tray button small { font-size:15px; font-weight:800; color:#7E212F;
+  background:#FFF9EF; border-radius:8px; padding:1px 7px; margin-top:2px; }
 #pan-right .t { cursor:pointer; }
 #pan-right .t:hover { filter:brightness(1.15); }
+#totals { display:flex; gap:26px; font-size:24px; font-weight:900; color:#3d2723; margin-top:2px; }
+#totals .diff { color:#c0392b; }
+#totals .ok { color:#1fae8e; }
 #tray { display:flex; gap:16px; align-items:flex-end; justify-content:center;
   background:#EADFCE; border-radius:20px; padding:14px 26px; min-height:110px; margin-top:14px; }
 #tray button { border:none; background:transparent; cursor:pointer; line-height:1; }
@@ -45,6 +50,7 @@ header { display:flex; gap:30px; padding:12px; font-size:24px; font-weight:800; 
 <body>
 <header><span>⚖️ 기우뚱 떡시루</span><span id="time">90초</span><span id="round">1 / 5판</span></header>
 <div id="hint">왼쪽 시루와 수평이 되게, 아래 떡을 골라 오른쪽 시루에 올려요! (올린 떡을 누르면 다시 내려요)</div>
+<div id="totals"></div>
 <div id="scale-area">
   <div id="pillar"></div><div id="base"></div>
   <div id="beam">
@@ -94,25 +100,27 @@ function newRound(){
   right = [];
   render();
 }
-function fontFor(w){ return (26 + w * 7) + "px"; }
+function fontFor(w){ return (24 + w * 5) + "px"; }
+function grams(w){ return (w * 100) + "g"; }
+function tteokEl(t, tag){
+  const s = document.createElement(tag);
+  s.className = "t";
+  s.innerHTML = `<span style="font-size:${fontFor(t.w)}">${t.e}</span><small>${grams(t.w)}</small>`;
+  return s;
+}
 function render(){
   const pl = $("pan-left"), pr = $("pan-right"), tr = $("tray");
   pl.innerHTML = ""; pr.innerHTML = ""; tr.innerHTML = "";
-  for (const t of leftItems){
-    const s = document.createElement("span");
-    s.className = "t"; s.textContent = t.e; s.style.fontSize = fontFor(t.w);
-    pl.appendChild(s);
-  }
+  for (const t of leftItems) pl.appendChild(tteokEl(t, "span"));
   for (const t of right){
-    const s = document.createElement("span");
-    s.className = "t"; s.textContent = t.e; s.style.fontSize = fontFor(t.w);
+    const s = tteokEl(t, "span");
     s.title = "내리기";
     s.addEventListener("click", () => { if (!playing) return; right = right.filter(x => x.id !== t.id); tray.push(t); render(); });
     pr.appendChild(s);
   }
   for (const t of tray){
     const b = document.createElement("button");
-    b.textContent = t.e; b.style.fontSize = fontFor(t.w);
+    b.innerHTML = `<span style="font-size:${fontFor(t.w)}">${t.e}</span><br><small>${grams(t.w)}</small>`;
     b.addEventListener("click", () => { if (!playing) return; tray = tray.filter(x => x.id !== t.id); right.push(t); render(); });
     tr.appendChild(b);
   }
@@ -121,7 +129,12 @@ function render(){
 function tilt(){
   const L = leftItems.reduce((s, t) => s + t.w, 0);
   const R = right.reduce((s, t) => s + t.w, 0);
-  const ang = Math.max(-14, Math.min(14, (L - R) * 3)); // 왼쪽이 무거우면 왼쪽으로 기움
+  const diff = L - R;
+  $("totals").innerHTML = `<span>왼쪽 ${L * 100}g</span><span>오른쪽 ${R * 100}g</span>` +
+    (diff === 0 && right.length ? `<span class="ok">수평!</span>`
+      : diff > 0 ? `<span class="diff">${diff * 100}g 모자라요</span>`
+      : diff < 0 ? `<span class="diff">${-diff * 100}g 넘쳤어요</span>` : "");
+  const ang = Math.max(-14, Math.min(14, diff * 3)); // 왼쪽이 무거우면 왼쪽으로 기움
   $("beam").style.transform = `rotate(${-ang}deg)`;
   document.querySelectorAll(".pan").forEach(p => p.style.transform = `rotate(${ang}deg)`);
   if (playing && right.length && L === R){

@@ -52,7 +52,7 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
 .dots { font-size: 26px; letter-spacing: 6px; color: var(--brand); min-width: 120px; text-align: center; }
 
 /* ② 소개 */
-.intro-stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 40px; }
+.intro-stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 0 40px; }
 #intro-img { max-width: 100%; max-height: 100%; border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0,0,0,.15); background: #fff; }
 .intro-empty { font-size: 34px; color: #999; }

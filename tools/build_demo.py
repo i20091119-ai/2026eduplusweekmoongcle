@@ -23,13 +23,22 @@ maker = {
     for n in ("personality", "worldcup", "emotion")
 }
 import base64
+import io
 import mimetypes
 
 def _intro_data_uri(p: Path) -> str:
     if p.suffix.lower() == ".svg":
         return "data:image/svg+xml;utf8," + quote(p.read_text(encoding="utf-8"))
-    mime = mimetypes.guess_type(p.name)[0] or "image/png"
-    return f"data:{mime};base64," + base64.b64encode(p.read_bytes()).decode()
+    try:  # 단일 파일 데모가 비대해지지 않게 축소·JPEG 변환 (키오스크는 원본 사용)
+        from PIL import Image
+        im = Image.open(p).convert("RGB")
+        im.thumbnail((1280, 1280))
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=82)
+        return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+    except Exception:
+        mime = mimetypes.guess_type(p.name)[0] or "image/png"
+        return f"data:{mime};base64," + base64.b64encode(p.read_bytes()).decode()
 
 intro = [
     _intro_data_uri(p)
@@ -81,7 +90,11 @@ window.fetch = (url, opts) => {{
   }}
   if (u.includes("/api/status"))   return _json({{ waiting: [{{ station: "A", number: DEMO.number }}] }});
   if (u.includes("/api/call"))     return _json({{ ok: true, station: "A", number: DEMO.number }});
-  if (u.includes("/api/complete")) {{ DEMO.number++; return _json({{ ok: true, number: DEMO.number, printed: true }}); }}
+  if (u.includes("/api/complete")) {{
+    DEMO.number++;
+    try {{ DEMO.lastDosan = JSON.parse(opts.body).dosan; }} catch (e) {{}}
+    return _json({{ ok: true, number: DEMO.number, printed: true }});
+  }}
   return _json({{}});
 }};
 function setGameFrame(url) {{
@@ -102,11 +115,46 @@ demo_ui = """
 const bar = document.createElement("div");
 bar.id = "demo-bar";
 bar.innerHTML = `<span class="demo-chip">🎪 데모 — 코드: <b>__CODES__</b></span>
-  <button id="demo-call">🔔 부저 누르기 (호출 시뮬레이션)</button>`;
+  <button id="demo-call">🔔 부저 누르기 (호출 시뮬레이션)</button>
+  <button id="demo-print">🖨 도안 인쇄 미리보기</button>`;
 document.body.appendChild(bar);
 document.getElementById("demo-call").addEventListener("click", () => {
   ensureAudio();
   onCalled(myNumber || DEMO.number);
+});
+/* 데모 인쇄: 실제 부스에서는 서버가 스탬프한 PDF를 프린터로 보낸다.
+   데모에서는 같은 레이아웃(B5 · 하단 번호블록+QR)을 브라우저 인쇄로 재현. */
+document.getElementById("demo-print").addEventListener("click", () => {
+  const label = (DEMO.lastDosan || "동물/여우.pdf").split("/").pop().replace(".pdf", "");
+  const num = String(myNumber || DEMO.number).padStart(3, "0");
+  const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    @page { size: 182mm 257mm; margin: 0; }
+    body { margin:0; width:182mm; height:257mm; font-family:sans-serif; position:relative; }
+    h1 { text-align:center; margin-top:18mm; font-size:24pt; }
+    .sub { text-align:center; color:#666; font-size:10pt; }
+    svg.face { display:block; margin:16mm auto 0; }
+    .num { position:absolute; left:12mm; bottom:7mm; width:52mm; height:16mm; background:#7E212F;
+      border-radius:3mm; color:#fff; font-size:20pt; font-weight:bold; display:flex;
+      align-items:center; justify-content:center; }
+    .num-label { position:absolute; left:12mm; bottom:24mm; font-size:8pt; }
+    .qr { position:absolute; right:12mm; bottom:6mm; width:18mm; height:18mm; border:1.2mm solid #000;
+      display:flex; align-items:center; justify-content:center; font-size:7pt; text-align:center; }
+    .qr-label { position:absolute; right:12mm; bottom:25mm; width:18mm; text-align:center; font-size:8pt; }
+  </style></head><body>
+    <h1>뭉클 클리커 도안 — ${label}</h1>
+    <p class="sub">(데모 인쇄 — 실제 부스에서는 서버가 도안 PDF에 자동 스탬프)</p>
+    <svg class="face" width="380" height="380" viewBox="0 0 200 200" fill="none" stroke="#000" stroke-width="2">
+      <circle cx="100" cy="100" r="80"/><circle cx="72" cy="85" r="9"/><circle cx="128" cy="85" r="9"/>
+      <path d="M70 125 Q100 150 130 125"/>
+    </svg>
+    <span class="num-label">오늘의 참여번호</span><div class="num">No. ${num}</div>
+    <span class="qr-label">뭉클 더 알아보기</span><div class="qr">QR</div>
+  </body></html>`;
+  const f = document.createElement("iframe");
+  f.style.cssText = "position:fixed;width:0;height:0;border:none";
+  document.body.appendChild(f);
+  f.srcdoc = doc;
+  f.onload = () => { f.contentWindow.print(); setTimeout(() => f.remove(), 60000); };
 });
 """.replace("__CODES__", " · ".join(codes))
 
