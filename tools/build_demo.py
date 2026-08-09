@@ -172,6 +172,7 @@ def js_dump(o):  # 문자열 내 </script> 로 바깥 스크립트가 닫히는 
 prelude = f"""
 /* ═══ 데모 모킹 — 실제 서버 없이 동작 (부스 코드와 동일 UI) ═══ */
 /* 브랜드 서체 data URI — 파일 안에 1벌만 싣고 CSS·게임의 __FONT_*__ 마커를 런타임 치환 */
+const QR_URI = {js_dump(_alpha_thumb_uri(ROOT / "static/kiosk/qr.png", 300) if (ROOT / "static/kiosk/qr.png").exists() else "")};
 const FONT_URI = {js_dump(font_uri)};
 function applyFontUris(s) {{
   return s.replace(/__FONT_(light|medium|bold)__/g, (m, w) => FONT_URI[w] || "");
@@ -286,7 +287,7 @@ function demoPrint() {{
       <div class="note">${{meta.note}}<div class="guide">색칠 순서: 밝은 면, 어두운 면, 검정 외곽선, 흰색 하이라이트 (아크릴마카 3색 이내)</div></div></div>` : ""}}
     <div class="band"><span class="num">No. ${{String(DEMO.number).padStart(3, "0")}}</span>
       <span class="foot">뭉클 떡집 · 제17회 에듀플러스위크 미래교육박람회</span>
-      <span class="qr">뭉클 더 알아보기</span></div>
+      <span class="qr">${{QR_URI ? `<img src="${{QR_URI}}" style="height:15mm;display:block;margin:0 auto 1mm">` : ""}}뭉클 더 알아보기</span></div>
   </div></body></html>`));
   d.close();
   // 이미지·서체 로딩이 끝난 뒤 인쇄 (안 그러면 빈 칸으로 찍힘)

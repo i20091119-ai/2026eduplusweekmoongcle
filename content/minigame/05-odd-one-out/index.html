@@ -57,14 +57,43 @@ function update(){
   $("time").textContent = `${time}초`;
   $("level").textContent = `${level}단계`;
 }
+/* 같은 몬스터의 색상 변형 생성 (레벨이 오를수록 색 차이가 미세해져 어려워짐) */
+let roundSeq = 0;
+function variantOf(src, deg, cb){
+  const im = new Image();
+  im.onload = () => {
+    try {
+      const cv = document.createElement("canvas");
+      cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+      const ctx = cv.getContext("2d");
+      ctx.filter = `hue-rotate(${deg}deg)`;
+      ctx.drawImage(im, 0, 0);
+      cb(cv.toDataURL());
+    } catch (e) { cb(null); }
+  };
+  im.onerror = () => cb(null);
+  im.src = src;
+}
 function round(){
   const n = Math.min(2 + level, 7); // 3×3 → 최대 7×7
   const cell = Math.min(90, Math.floor(430 / n));
-  const grid = $("grid");
-  grid.style.gridTemplateColumns = `repeat(${n}, ${cell}px)`;
-  grid.style.gridAutoRows = `${cell}px`;
-  grid.innerHTML = "";
-  let base, odd, useImg = MONSTERS.length >= 2;
+  const useImg = MONSTERS.length >= 2;
+  const seq = ++roundSeq;
+  if (useImg && level >= 4){
+    // 4단계부터: 같은 몬스터 + 색만 살짝 다른 변형 — 갈수록 각도가 줄어 미세해진다
+    const base = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
+    const deg = Math.max(22, 110 - (level - 3) * 16);
+    variantOf(base, deg, v => {
+      if (seq !== roundSeq || !playing) return; // 라운드가 이미 넘어갔으면 무시
+      if (v) buildGrid(n, cell, base, v, true);
+      else { // 캔버스 실패 폴백: 다른 몬스터
+        let oi = Math.floor(Math.random() * MONSTERS.length);
+        buildGrid(n, cell, base, MONSTERS[oi === MONSTERS.indexOf(base) ? (oi + 1) % MONSTERS.length : oi], true);
+      }
+    });
+    return;
+  }
+  let base, odd;
   if (useImg){
     const bi = Math.floor(Math.random() * MONSTERS.length);
     let oi = Math.floor(Math.random() * (MONSTERS.length - 1));
@@ -73,6 +102,13 @@ function round(){
   } else {
     [base, odd] = PAIRS[Math.floor(Math.random() * PAIRS.length)];
   }
+  buildGrid(n, cell, base, odd, useImg);
+}
+function buildGrid(n, cell, base, odd, useImg){
+  const grid = $("grid");
+  grid.style.gridTemplateColumns = `repeat(${n}, ${cell}px)`;
+  grid.style.gridAutoRows = `${cell}px`;
+  grid.innerHTML = "";
   const oddIdx = Math.floor(Math.random() * n * n);
   for (let i = 0; i < n * n; i++){
     const b = document.createElement("button");

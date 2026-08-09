@@ -50,18 +50,22 @@ def _overlay(number: int, pagesize: tuple[float, float]) -> bytes:
     c.setFont(_FONT, 8)
     c.drawString(bx, by + block_h + 2 * mm, "오늘의 참여번호")
 
-    # ── 우측: 뭉클 QR + 캡션 ──
+    # ── 우측: 뭉클 QR + 캡션 — 이미지 슬롯(static/kiosk/qr.png) 우선, 없으면 생성 ──
     qr_size = 18 * mm
     qx = w - 15 * mm - qr_size
     qy = 6 * mm
-    widget = QrCodeWidget(config.QR_URL)
-    b = widget.getBounds()
-    d = Drawing(
-        qr_size, qr_size,
-        transform=[qr_size / (b[2] - b[0]), 0, 0, qr_size / (b[3] - b[1]), 0, 0],
-    )
-    d.add(widget)
-    renderPDF.draw(d, c, qx, qy)
+    if _QR_IMG.exists():
+        c.drawImage(str(_QR_IMG), qx, qy, qr_size, qr_size,
+                    preserveAspectRatio=True, anchor="c", mask="auto")
+    else:
+        widget = QrCodeWidget(config.QR_URL)
+        b = widget.getBounds()
+        d = Drawing(
+            qr_size, qr_size,
+            transform=[qr_size / (b[2] - b[0]), 0, 0, qr_size / (b[3] - b[1]), 0, 0],
+        )
+        d.add(widget)
+        renderPDF.draw(d, c, qx, qy)
     c.setFont(_FONT, 8)
     c.drawCentredString(qx + qr_size / 2, qy + qr_size + 1.5 * mm, config.QR_CAPTION)
 
@@ -83,6 +87,7 @@ def _clean(s: str) -> str:
 
 B5 = (182 * mm, 257 * mm)  # PNG 도안 조판용 페이지 크기 (JIS B5 세로)
 _LOGO = Path(__file__).resolve().parent.parent / "static" / "kiosk" / "logo.png"
+_QR_IMG = Path(__file__).resolve().parent.parent / "static" / "kiosk" / "qr.png"
 # 내장 CID 폰트가 지원하는 문자만 사용 (이모지·화살표 금지)
 COLOR_GUIDE = "색칠 순서: 밝은 면, 어두운 면, 검정 외곽선, 흰색 하이라이트 (아크릴마카 3색 이내)"
 
