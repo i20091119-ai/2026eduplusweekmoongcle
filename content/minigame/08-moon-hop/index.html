@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>껑충 달토끼</title>
+<style>
+/* 기사의 여행(나이트 투어)의 이동 규칙을 달토끼 점프로 — 방문한 구름은 사라지고, 못 뛰면 종료 */
+* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
+html,body { width:100%; height:100%; overflow:hidden; }
+body { background:#274060; display:flex; flex-direction:column; align-items:center; color:#fff; }
+header { display:flex; gap:30px; padding:12px; font-size:24px; font-weight:800; color:#F2C744; }
+#msg { font-size:20px; font-weight:700; color:#cfe0f0; min-height:1.4em; }
+#board { flex:1; display:grid; grid-template-columns:repeat(5, 92px); grid-auto-rows:92px;
+  gap:10px; align-content:center; }
+.cell { border:none; border-radius:18px; font-size:46px; cursor:default; position:relative;
+  background:#3a5a80; display:flex; align-items:center; justify-content:center; transition:background .2s; }
+.cell.cloud { background:#EAF3FA; }
+.cell.gone { background:rgba(255,255,255,.06); }
+.cell.target { background:#F2C744; cursor:pointer; animation:bounce 1s infinite; }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+.cell.rabbit { background:#FFF9EF; }
+#overlay { position:fixed; inset:0; background:rgba(15,25,40,.75); display:flex;
+  align-items:center; justify-content:center; flex-direction:column; gap:18px; }
+#overlay.hide { display:none; }
+#overlay h1 { font-size:52px; color:#F2C744; }
+#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;
+  border-radius:16px; background:#7E212F; color:#F2C744; cursor:pointer; }
+</style>
+</head>
+<body>
+<header><span>🐰 껑충 달토끼</span><span id="score">떡 0개</span></header>
+<div id="msg">노란 구름으로만 껑충! (두 칸 + 옆 한 칸 L자 점프)</div>
+<div id="board"></div>
+<div id="overlay"><h1 id="ov-title">🐰 껑충 달토끼</h1><p id="ov-sub" style="font-size:24px;color:#cfe0f0">달토끼가 L자로 껑충! 지나간 구름은 사라져요.<br>구름 위 떡을 최대한 많이 모아 보세요 (최대 24개)</p><button onclick="start()">시작!</button></div>
+<script>
+"use strict";
+const N = 5;
+const MOVES = [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
+const $ = id => document.getElementById(id);
+const board = $("board");
+let cells = [], visited = [], pos = 0, score = 0, playing = false;
+
+for (let i = 0; i < N * N; i++){
+  const b = document.createElement("button");
+  b.className = "cell";
+  b.addEventListener("click", () => jump(i));
+  board.appendChild(b);
+  cells.push(b);
+}
+function idx(r, c){ return r * N + c; }
+function legalTargets(){
+  const r = Math.floor(pos / N), c = pos % N;
+  return MOVES.map(([dr, dc]) => [r + dr, c + dc])
+    .filter(([nr, nc]) => nr >= 0 && nr < N && nc >= 0 && nc < N && !visited[idx(nr, nc)])
+    .map(([nr, nc]) => idx(nr, nc));
+}
+function start(){
+  $("overlay").classList.add("hide");
+  visited = Array(N * N).fill(false);
+  score = 0;
+  pos = idx(2, 2); // 가운데 출발
+  visited[pos] = true;
+  playing = true;
+  render();
+}
+function render(){
+  const targets = new Set(playing ? legalTargets() : []);
+  cells.forEach((b, i) => {
+    b.className = "cell";
+    if (i === pos){ b.classList.add("rabbit"); b.textContent = "🐰"; }
+    else if (visited[i]){ b.classList.add("gone"); b.textContent = ""; }
+    else if (targets.has(i)){ b.classList.add("target"); b.textContent = "🍡"; }
+    else { b.classList.add("cloud"); b.textContent = "🍡"; }
+  });
+  $("score").textContent = `떡 ${score}개`;
+  if (playing && targets.size === 0) end();
+}
+function jump(i){
+  if (!playing) return;
+  if (!legalTargets().includes(i)) return;
+  pos = i;
+  visited[i] = true;
+  score++;
+  render();
+}
+function end(){
+  playing = false;
+  const perfect = score === N * N - 1;
+  $("ov-title").textContent = perfect ? "🌕 전설의 달토끼!" : "🐰 착지 완료!";
+  $("ov-sub").innerHTML = perfect
+    ? "구름 24개를 전부 밟았어요! 완벽한 여행!"
+    : `떡 ${score}개 획득! 더 갈 수 있는 구름이 없어요.<br>다른 길로 가면 더 모을 수 있을까요?`;
+  document.querySelector("#overlay button").textContent = "다시 하기";
+  setTimeout(() => $("overlay").classList.remove("hide"), 600);
+}
+</script>
+</body>
+</html>

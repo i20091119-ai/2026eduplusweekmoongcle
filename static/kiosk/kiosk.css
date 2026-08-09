@@ -121,14 +121,15 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
 .wait-tabs { display: flex; gap: 14px; padding: 16px 30px 0; }
 .tab { font-size: 26px; font-weight: 700; padding: 16px 34px; background: #cfe6f1; }
 .tab.active { background: var(--card); box-shadow: 0 4px 0 var(--moon); }
-.game-menu { flex: 1; display: flex; flex-wrap: wrap; gap: 22px;
-  align-items: center; justify-content: center; padding: 20px 50px; overflow: auto; }
+/* 미니게임 메뉴 — 8종 = 4열 × 2줄 */
+.game-menu { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  align-content: center; padding: 16px 36px; overflow: auto; }
 .game-menu button {
-  width: 330px; min-height: 150px; font-size: 28px; font-weight: 800;
-  display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center;
+  min-height: 168px; font-size: 24px; font-weight: 800; padding: 12px 8px;
+  display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center;
 }
-.game-menu .g-emoji { font-size: 52px; }
-.game-menu .g-desc { font-size: 18px; font-weight: 500; color: #8a7a6a; }
+.game-menu .g-emoji { font-size: 48px; }
+.game-menu .g-desc { font-size: 16px; font-weight: 500; color: #8a7a6a; padding: 0 6px; text-align: center; }
 .game-frame-wrap { flex: 1; display: flex; flex-direction: column; padding: 12px 20px 20px; gap: 10px; }
 .btn-exit { align-self: flex-start; min-height: 60px; padding: 10px 24px; font-size: 22px; }
 #game-frame { flex: 1; width: 100%; border: none; border-radius: 16px; background: #fff;

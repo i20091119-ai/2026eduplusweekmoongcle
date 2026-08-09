@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>떡 주문 기억왕</title>
+<style>
+/* 순차 기억 → 4지선다 회상 + 답안 슬롯 (토러스 메모리 게임의 UX를 떡집 테마로) */
+* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
+html,body { width:100%; height:100%; overflow:hidden; }
+body { background:#ACD6E8; display:flex; flex-direction:column; align-items:center; }
+header { display:flex; gap:30px; padding:12px; font-size:24px; font-weight:800; color:#7E212F; }
+#stage { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; width:100%; }
+#speech { font-size:26px; font-weight:700; color:#3d2723; min-height:1.5em; }
+#show-item { font-size:110px; min-height:130px; display:flex; flex-direction:column; align-items:center; }
+#show-item small { font-size:24px; font-weight:800; color:#7E212F; }
+#slots { display:flex; gap:14px; }
+.slot { width:74px; height:74px; background:#FFF9EF; border:4px dashed #d9c5a8; border-radius:14px;
+  font-size:44px; display:flex; align-items:center; justify-content:center; }
+.slot.filled { border-style:solid; border-color:#F2C744; }
+.slot.wrong { border-color:#c0392b; background:#ffe0da; animation:shake .4s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-9px)} 75%{transform:translateX(9px)} }
+#choices { display:flex; gap:20px; }
+#choices button { width:130px; height:130px; border:none; border-radius:20px; background:#FFF9EF;
+  font-size:64px; cursor:pointer; box-shadow:0 5px 0 rgba(0,0,0,.15);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; }
+#choices button small { font-size:18px; font-weight:800; color:#7E212F; }
+#choices button:active { transform:translateY(3px); }
+#overlay { position:fixed; inset:0; background:rgba(43,30,25,.6); display:flex;
+  align-items:center; justify-content:center; flex-direction:column; gap:18px; color:#fff; }
+#overlay.hide { display:none; }
+#overlay h1 { font-size:52px; }
+#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;
+  border-radius:16px; background:#7E212F; color:#F2C744; cursor:pointer; }
+</style>
+</head>
+<body>
+<header><span>🧠 떡 주문 기억왕</span><span id="lives">❤️❤️❤️</span><span id="round">1번째 주문</span></header>
+<div id="stage">
+  <div id="speech"></div>
+  <div id="show-item"></div>
+  <div id="slots"></div>
+  <div id="choices"></div>
+</div>
+<div id="overlay"><h1 id="ov-title">떡 주문 기억왕</h1><p id="ov-sub" style="font-size:26px">달토끼 사장님의 떡 주문을 순서대로 외워 담아요!</p><button onclick="start()">시작!</button></div>
+<script>
+"use strict";
+const TTEOK = [
+  { e:"🍡", n:"꼬치떡" }, { e:"🥮", n:"달떡" }, { e:"🍚", n:"백설기" }, { e:"🌕", n:"보름떡" },
+];
+const $ = id => document.getElementById(id);
+let seq = [], input = 0, lives = 3, round = 1, phase = "idle";
+
+function start(){
+  $("overlay").classList.add("hide");
+  lives = 3; round = 1;
+  update();
+  newOrder();
+}
+function update(){
+  $("lives").textContent = "❤️".repeat(lives) + "🤍".repeat(3 - lives);
+  $("round").textContent = `${round}번째 주문`;
+}
+function seqLen(){ return Math.min(1 + round, 6); } // 2개부터 시작, 최대 6개
+
+function newOrder(){
+  seq = Array.from({length: seqLen()}, () => Math.floor(Math.random() * TTEOK.length));
+  input = 0;
+  showOrder();
+}
+async function showOrder(){
+  phase = "show";
+  $("choices").innerHTML = "";
+  $("slots").innerHTML = "";
+  $("speech").textContent = "🐰 사장님: 주문 나갑니다~ 잘 보세요!";
+  for (const i of seq){
+    $("show-item").innerHTML = `${TTEOK[i].e}<small>${TTEOK[i].n}</small>`;
+    await sleep(850);
+    $("show-item").innerHTML = "";
+    await sleep(180);
+  }
+  recall();
+}
+function recall(){
+  phase = "recall";
+  $("speech").textContent = "순서대로 담아 주세요!";
+  const slots = $("slots");
+  slots.innerHTML = "";
+  seq.forEach(() => slots.appendChild(el("div", "slot")));
+  const ch = $("choices");
+  ch.innerHTML = "";
+  TTEOK.forEach((t, i) => {
+    const b = document.createElement("button");
+    b.innerHTML = `${t.e}<small>${t.n}</small>`;
+    b.addEventListener("click", () => pick(i));
+    ch.appendChild(b);
+  });
+}
+function pick(i){
+  if (phase !== "recall") return;
+  const slot = document.querySelectorAll(".slot")[input];
+  slot.textContent = TTEOK[i].e; // 내가 누른 것을 그대로 보여준다 (오해 방지)
+  if (i === seq[input]){
+    slot.classList.add("filled");
+    input++;
+    if (input === seq.length){
+      phase = "idle";
+      $("speech").textContent = "🎉 주문 완벽! 다음 주문 들어갑니다";
+      round++;
+      update();
+      setTimeout(newOrder, 1100);
+    }
+  } else {
+    phase = "idle";
+    slot.classList.add("wrong");
+    lives--;
+    update();
+    if (lives <= 0){
+      $("ov-title").textContent = "😵 주문이 밀렸어요!";
+      $("ov-sub").textContent = `${round - 1}개 주문까지 성공!`;
+      document.querySelector("#overlay button").textContent = "다시 하기";
+      setTimeout(() => $("overlay").classList.remove("hide"), 700);
+    } else {
+      $("speech").textContent = "앗, 다른 떡이에요! 새 주문으로 다시~";
+      setTimeout(newOrder, 1200); // 같은 길이 · 새 시퀀스
+    }
+  }
+}
+function el(tag, cls){ const e = document.createElement(tag); e.className = cls; return e; }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+</script>
+</body>
+</html>
