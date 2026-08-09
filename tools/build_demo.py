@@ -22,9 +22,19 @@ maker = {
     n: json.loads((ROOT / f"content/maker/{n}.json").read_text(encoding="utf-8"))
     for n in ("personality", "worldcup", "emotion")
 }
+import base64
+import mimetypes
+
+def _intro_data_uri(p: Path) -> str:
+    if p.suffix.lower() == ".svg":
+        return "data:image/svg+xml;utf8," + quote(p.read_text(encoding="utf-8"))
+    mime = mimetypes.guess_type(p.name)[0] or "image/png"
+    return f"data:{mime};base64," + base64.b64encode(p.read_bytes()).decode()
+
 intro = [
-    "data:image/svg+xml;utf8," + quote(p.read_text(encoding="utf-8"))
-    for p in sorted((ROOT / "content/intro").glob("*.svg"))
+    _intro_data_uri(p)
+    for p in sorted((ROOT / "content/intro").iterdir())
+    if p.suffix.lower() in {".svg", ".png", ".jpg", ".jpeg", ".webp"}
 ]
 dosan = [
     {"file": str(p.relative_to(ROOT / "content/dosan")), "label": p.stem,
