@@ -100,7 +100,7 @@ python3 tools/make_sample_dosan.py                    # 샘플 도안 생성 (�
 |---|---|---|
 | `BOOTH_PRINTER` | `booth` | CUPS 프린터 이름 (646Cdw IPP 등록) |
 | `BOOTH_PRINT_DRY_RUN` | `0` | `1`이면 인쇄 생략 (개발·리허설) |
-| `BOOTH_PAPER` | `jis_b5_182x257mm` | 출력 용지 (B5 확정. ISO B5는 `iso_b5_176x250mm`) |
+| `BOOTH_PAPER` | `jis_b5_182x257mm` | 출력 용지 (B5 확정 · A4만 있으면 `A4` — fit-to-page로 자동 맞춤) |
 | `BOOTH_BRAND_COLOR` | `#F5573B` | 참여번호 블록 색 (뭉클 브랜드 컬러로 교체) |
 | `BOOTH_QR_URL` | `https://moongcle.com` | 도안 하단 QR 링크 |
 | `BOOTH_STATIONS` | `A,B` | 스테이션 목록 |

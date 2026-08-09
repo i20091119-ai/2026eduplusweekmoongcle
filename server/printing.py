@@ -31,6 +31,9 @@ def print_pdf(path: Path) -> bool:
                 "-d", config.PRINTER_NAME,
                 "-o", f"print-color-mode={config.PRINT_COLOR_MODE}",
                 "-o", f"media={config.PAPER}",
+                # 용지와 문서 크기가 달라도 멈추지 않고 맞춰 인쇄
+                # (B5 도안 ↔ A4 용지는 비율이 거의 같아 왜곡 없음)
+                "-o", "fit-to-page",
                 str(path),
             ]
         subprocess.run(cmd, check=True, capture_output=True, timeout=30)
