@@ -333,8 +333,10 @@ def index():
 (config.CONTENT_DIR / "intro").mkdir(parents=True, exist_ok=True)
 (config.CONTENT_DIR / "minigame").mkdir(parents=True, exist_ok=True)
 (config.CONTENT_DIR / "dosan").mkdir(parents=True, exist_ok=True)
+(config.CONTENT_DIR / "character").mkdir(parents=True, exist_ok=True)
 app.mount("/content/intro", StaticFiles(directory=config.CONTENT_DIR / "intro"), name="intro")
 app.mount("/content/minigame", StaticFiles(directory=config.CONTENT_DIR / "minigame"), name="minigame")
 app.mount("/content/dosan", StaticFiles(directory=config.CONTENT_DIR / "dosan"), name="dosan")  # 결과 화면 미리보기용
+app.mount("/content/character", StaticFiles(directory=config.CONTENT_DIR / "character"), name="character")  # 달토끼 등 캐릭터
 app.mount("/admin", StaticFiles(directory=config.STATIC_DIR / "admin", html=True), name="admin")
 app.mount("/kiosk", StaticFiles(directory=config.STATIC_DIR / "kiosk", html=True), name="kiosk")

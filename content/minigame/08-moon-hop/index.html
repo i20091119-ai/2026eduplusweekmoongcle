@@ -35,6 +35,13 @@ header { display:flex; gap:30px; padding:12px; font-size:24px; font-weight:800; 
 <script>
 "use strict";
 const N = 5;
+// 달토끼 캐릭터 PNG가 있으면 이모지 대신 사용 (content/character/달토끼.png)
+let RABBIT_HTML = "🐰";
+(function(){
+  const img = new Image();
+  img.src = "/content/character/달토끼.png";
+  img.onload = () => { RABBIT_HTML = '<img src="' + img.src + '" style="height:72px">'; if (typeof render === "function" && playing !== undefined) render(); };
+})();
 const MOVES = [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
 const $ = id => document.getElementById(id);
 const board = $("board");
@@ -67,7 +74,7 @@ function render(){
   const targets = new Set(playing ? legalTargets() : []);
   cells.forEach((b, i) => {
     b.className = "cell";
-    if (i === pos){ b.classList.add("rabbit"); b.textContent = "🐰"; }
+    if (i === pos){ b.classList.add("rabbit"); b.innerHTML = RABBIT_HTML; }
     else if (visited[i]){ b.classList.add("gone"); b.textContent = ""; }
     else if (targets.has(i)){ b.classList.add("target"); b.textContent = "🍡"; }
     else { b.classList.add("cloud"); b.textContent = "🍡"; }

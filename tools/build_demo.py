@@ -85,6 +85,13 @@ for sub in sorted((ROOT / "content/minigame").iterdir()):
     game_src[url] = (sub / "index.html").read_text(encoding="utf-8")
 
 
+# 달토끼 캐릭터가 있으면 게임 HTML 안의 경로를 data URI로 인라인 (단일 파일 데모용)
+_char = ROOT / "content/character/달토끼.png"
+if _char.exists():
+    _char_uri = "data:image/png;base64," + base64.b64encode(_char.read_bytes()).decode()
+    game_src = {u: h.replace("/content/character/달토끼.png", _char_uri) for u, h in game_src.items()}
+
+
 def js_dump(o):  # 문자열 내 </script> 로 바깥 스크립트가 닫히는 것 방지
     return json.dumps(o, ensure_ascii=False).replace("</", "<\\/")
 
