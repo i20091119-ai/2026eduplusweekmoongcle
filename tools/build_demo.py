@@ -79,6 +79,17 @@ for r in maker.get("personality", {}).get("results", {}).values():
         f = ROOT / "content" / "dosan" / img.removeprefix("/content/dosan/")
         if f.exists():
             r["img"] = _thumb_data_uri(f)
+def _alpha_thumb_uri(p, size=480):
+    """투명 배경 유지 축소 인라인 (WebP) — 데모 파일 크기 억제."""
+    import io as _io
+    from PIL import Image
+    im = Image.open(p)
+    im.thumbnail((size, size))
+    b = _io.BytesIO()
+    im.save(b, "WEBP", quality=85)
+    return "data:image/webp;base64," + base64.b64encode(b.getvalue()).decode()
+
+
 games, game_src = [], {}
 for sub in sorted((ROOT / "content/minigame").iterdir()):
     # 서버(list_minigames)와 동일한 관용 규칙: game.json + index.html 둘 다 있어야 게임
@@ -93,27 +104,15 @@ for sub in sorted((ROOT / "content/minigame").iterdir()):
          "emoji": meta.get("emoji", "🎮"),
          "desc": meta.get("desc", ""), "url": url}
     html_src = (sub / "index.html").read_text(encoding="utf-8")
-    # 게임 내부 이미지 슬롯(assets/*.png)을 data URI로 인라인
+    # 게임 내부 이미지 슬롯(assets/*.png)을 축소 WebP data URI로 인라인
     assets_dir = sub / "assets"
     if assets_dir.is_dir():
         for a in assets_dir.glob("*.png"):
-            html_src = html_src.replace(f"assets/{a.name}",
-                "data:image/png;base64," + base64.b64encode(a.read_bytes()).decode())
+            html_src = html_src.replace(f"assets/{a.name}", _alpha_thumb_uri(a, 360))
     if (sub / "icon.png").exists():
-        g["icon"] = "data:image/png;base64," + base64.b64encode((sub / "icon.png").read_bytes()).decode()
+        g["icon"] = _alpha_thumb_uri(sub / "icon.png", 280)
     games.append(g)
     game_src[url] = html_src
-
-
-def _alpha_thumb_uri(p, size=480):
-    """투명 배경 유지 축소 인라인 (WebP) — 데모 파일 크기 억제."""
-    import io as _io
-    from PIL import Image
-    im = Image.open(p)
-    im.thumbnail((size, size))
-    b = _io.BytesIO()
-    im.save(b, "WEBP", quality=85)
-    return "data:image/webp;base64," + base64.b64encode(b.getvalue()).decode()
 
 
 # 달토끼 캐릭터가 있으면 게임 HTML 안의 경로를 data URI로 인라인 (단일 파일 데모용)

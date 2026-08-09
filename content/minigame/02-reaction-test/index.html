@@ -79,6 +79,21 @@ const $ = id => document.getElementById(id);
 const stage = $("stage");
 let phase = "idle", clickHandler = null;
 
+/* ── 이미지 슬롯: assets/<이름>.png — 없으면 이모지 ── */
+const ART = { "토끼":"🐰", "거북이":"🐢", "원숭이":"🐵", "나무늘보":"🦥",
+              "떡":"🍡", "여우":"🦊", "독수리":"🦅", "치타":"🐆" };
+const IMG = {};
+Object.keys(ART).forEach(k => {
+  const im = new Image();
+  im.src = `assets/${k}.png`;
+  im.onload = () => { IMG[k] = im.src; if (k === "떡") setRingTteok(); };
+});
+function face(k, px){
+  return IMG[k] ? `<img src="${IMG[k]}" style="height:${px}px;vertical-align:middle">`
+                : `<span style="font-size:${px}px">${ART[k]}</span>`;
+}
+function setRingTteok(){ document.querySelector("#ring-area .tteok").innerHTML = face("떡", 105); }
+
 /* ── 사운드 (짧은 신호음) ── */
 let AC = null;
 function beep(f, dur = 0.09, vol = 0.18, type = "sine"){
@@ -182,7 +197,7 @@ function mission2Intro(){
 }
 const m2 = { seq: [], i: 0, hits: [], wrong: 0, missed: 0, timer: null, t0: 0, showing: false };
 function m2Start(){
-  m2.seq = ["🐰","🐰","🐰","🐰","🐢","🐢"].sort(() => Math.random() - .5);
+  m2.seq = ["토끼","토끼","토끼","토끼","거북이","거북이"].sort(() => Math.random() - .5);
   m2.i = 0; m2.hits = []; m2.wrong = 0; m2.missed = 0;
   m2Round();
 }
@@ -199,13 +214,13 @@ function m2Round(){
     phase = "m2show";
     m2.showing = true;
     $("big").textContent = "";
-    $("emoji").textContent = cur;
+    $("emoji").innerHTML = face(cur, 150);
     $("emoji").classList.remove("pop"); void $("emoji").offsetWidth; $("emoji").classList.add("pop");
-    beep(cur === "🐰" ? 990 : 330, .09, .15);
+    beep(cur === "토끼" ? 990 : 330, .09, .15);
     m2.t0 = performance.now();
     m2.timer = setTimeout(() => {           // 1.4초 안에 반응 없으면
       if (phase !== "m2show") return;
-      if (cur === "🐰"){ m2.missed++; flash("놓쳤다! 💨", "bad"); }
+      if (cur === "토끼"){ m2.missed++; flash("놓쳤다! 💨", "bad"); }
       else flash("잘 참았어요! 😌", "good");
       m2Next();
     }, 1400);
@@ -216,7 +231,7 @@ function m2Click(){
   if (phase !== "m2show") return;
   clearTimeout(m2.timer);
   const cur = m2.seq[m2.i];
-  if (cur === "🐰"){
+  if (cur === "토끼"){
     const ms = Math.round(performance.now() - m2.t0);
     m2.hits.push(ms);
     flash(`${ms}ms 캐치! 🎯`, "good");
@@ -295,12 +310,13 @@ function m3Result(diff){
 
 /* ══ 종합 결과 ══ */
 const GRADES = [
-  { min: 255, e: "🐆", n: "치타",     t: "전광석화 그 자체!" },
-  { min: 215, e: "🦅", n: "매",       t: "정확하고 빠른 사냥꾼" },
-  { min: 170, e: "🐰", n: "토끼",     t: "껑충! 반짝이는 순발력" },
-  { min: 120, e: "🐱", n: "고양이",   t: "여유 있게, 그러나 날렵하게" },
-  { min: 70,  e: "🐢", n: "거북이",   t: "서두르지 않는 뚝심파" },
-  { min: 0,   e: "🦥", n: "나무늘보", t: "느긋함도 초능력이죠" },
+  { min: 255, n: "치타",     t: "전광석화 그 자체!" },
+  { min: 220, n: "독수리",   t: "정확하고 빠른 하늘의 사냥꾼" },
+  { min: 180, n: "토끼",     t: "껑충! 반짝이는 순발력" },
+  { min: 140, n: "여우",     t: "재빠르고 눈치 백단" },
+  { min: 100, n: "원숭이",   t: "장난기 속에 숨은 날렵함" },
+  { min: 55,  n: "거북이",   t: "서두르지 않는 뚝심파" },
+  { min: 0,   n: "나무늘보", t: "느긋함도 초능력이죠" },
 ];
 function finale(){
   const total = scores.s1 + scores.s2 + scores.s3;
@@ -310,7 +326,7 @@ function finale(){
   if (isBest) localStorage.setItem("reactionBest", String(total));
   $("mission-label").textContent = "";
   setDots(0, 0);
-  card(`<div id="final-animal">${g.e}</div>
+  card(`<div id="final-animal">${face(g.n, 140)}</div>
     <div id="final-grade">${total}점 — 당신은 ${g.n}!</div>
     <p>${g.t}</p>
     <div class="bars">
@@ -341,7 +357,7 @@ function intro(){
   card(`<h1>⚡ 동물 순발력 테스트</h1>
     <p>서로 다른 순발력을 재는 <b>3가지 미션</b>!<br>
     ⚡ 번개 반응 → 🐰 참을성 반응 → 🍡 타이밍 캐치<br>
-    종합 점수로 <b>나의 순발력 동물</b>을 알려드려요 🐆🦅🐰🐱🐢🦥</p>
+    종합 점수로 <b>나의 순발력 동물</b>을 알려드려요 (치타부터 나무늘보까지 7단계!)</p>
     <button>도전!</button>`);
   $("card-slot").querySelector("button").onclick = (e) => { e.stopPropagation(); mission1Intro(); };
 }
