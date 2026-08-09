@@ -5,6 +5,7 @@
 - BOOTH_PRINT_DRY_RUN=1:  실제 인쇄 없이 data/printed/ 보관 (개발·리허설)
 """
 import logging
+import os
 import platform
 import subprocess
 from pathlib import Path
@@ -14,6 +15,31 @@ from . import config
 log = logging.getLogger("booth.print")
 
 last_error: str | None = None  # 관리 페이지 상태 표시용
+
+_sumatra_cache: str | None = None
+
+
+def _find_sumatra() -> str:
+    """SumatraPDF 실행 파일 탐색 — 설치기 기본값이 버전에 따라 달라서 여러 위치 확인.
+
+    우선순위: BOOTH_SUMATRA 환경변수 → Program Files(전체 사용자 설치)
+    → AppData\\Local(현재 사용자 설치 · 최신 설치기 기본값) → 리포 폴더의 포터블.
+    """
+    global _sumatra_cache
+    if _sumatra_cache:
+        return _sumatra_cache
+    candidates = [
+        config.SUMATRA_PATH,
+        r"C:\Program Files\SumatraPDF\SumatraPDF.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\SumatraPDF\SumatraPDF.exe"),
+        str(config.BASE_DIR / "SumatraPDF.exe"),
+    ]
+    for c in candidates:
+        if c and Path(c).exists():
+            _sumatra_cache = c
+            log.info("SumatraPDF 발견: %s", c)
+            return c
+    return config.SUMATRA_PATH  # 못 찾으면 기본값으로 시도 (에러 메시지에 경로가 남음)
 
 
 def print_pdf(path: Path) -> tuple[bool, str | None]:
@@ -25,7 +51,7 @@ def print_pdf(path: Path) -> tuple[bool, str | None]:
         return True, None
     try:
         if platform.system() == "Windows":
-            cmd = [config.SUMATRA_PATH, "-print-to-default", "-silent", str(path)]
+            cmd = [_find_sumatra(), "-print-to-default", "-silent", str(path)]
         else:
             cmd = [
                 "lp",
