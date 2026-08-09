@@ -98,8 +98,14 @@ button:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.12);
 .maker-choices .c-emoji { font-size: 58px; }
 .vs-badge { font-size: 40px; font-weight: 900; color: var(--brand); align-self: center; }
 .maker-result-emoji { font-size: 120px; }
-.maker-result-name { font-size: 52px; font-weight: 900; color: var(--brand); }
-.maker-result-line { font-size: 26px; color: #7a6a5c; }
+.maker-result-img { height: 250px; border-radius: 18px; background: #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,.15); }
+.maker-result-name { font-size: 46px; font-weight: 900; color: var(--brand); }
+.maker-result-line { font-size: 25px; color: #5a4a3a; font-weight: 700; }
+.maker-result-why { max-width: 940px; font-size: 20px; color: #5a4a3a; background: var(--card);
+  border-radius: 14px; padding: 12px 22px; box-shadow: 0 3px 0 rgba(0,0,0,.08); }
+.skip-btn { font-size: 20px; font-weight: 700; padding: 12px 28px; background: #e9f2f7;
+  color: #35505f; border-radius: 999px; }
 .dosan-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
 .dosan-grid button { font-size: 28px; font-weight: 800; padding: 26px 34px;
   min-width: 220px; min-height: 110px; border: 4px solid transparent; }

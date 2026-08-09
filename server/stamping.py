@@ -61,9 +61,32 @@ def _overlay(number: int, pagesize: tuple[float, float]) -> bytes:
     return buf.getvalue()
 
 
+B5 = (182 * mm, 257 * mm)  # PNG 도안 조판용 페이지 크기 (JIS B5 세로)
+
+
+def _png_to_pdf(src: Path) -> bytes:
+    """PNG 도안을 B5 페이지로 조판 — 하단 30mm(스탬프 영역)를 비우고 중앙 배치."""
+    w, h = B5
+    margin, bottom = 12 * mm, 34 * mm
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=B5)
+    c.setFont(_FONT, 20)
+    c.drawCentredString(w / 2, h - 16 * mm, f"뭉클 클리커 도안 — {src.stem}")
+    area_w, area_h = w - margin * 2, h - bottom - 24 * mm
+    c.drawImage(
+        str(src), margin, bottom, area_w, area_h,
+        preserveAspectRatio=True, anchor="c", mask="auto",
+    )
+    c.save()
+    return buf.getvalue()
+
+
 def stamp_pdf(src: Path, number: int, dst: Path) -> Path:
-    """src 도안 PDF의 첫 페이지에 스탬프를 합성해 dst로 저장."""
-    reader = PdfReader(str(src))
+    """src 도안(PDF 또는 PNG)의 첫 페이지에 스탬프를 합성해 dst로 저장."""
+    if src.suffix.lower() == ".png":
+        reader = PdfReader(io.BytesIO(_png_to_pdf(src)))
+    else:
+        reader = PdfReader(str(src))
     box = reader.pages[0].mediabox
     overlay_page = PdfReader(
         io.BytesIO(_overlay(number, (float(box.width), float(box.height))))

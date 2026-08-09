@@ -235,8 +235,9 @@ async function startMaker() {
   show("maker");
 }
 
-/* 프로그램 1 — 성격검사 */
+/* 프로그램 1 — 성격검사 (16문항 유형검사: axes / 구버전 점수합산: questions) */
 function runPersonality(conf) {
+  if (conf.axes) return runTypeTest(conf);
   $("maker-title").textContent = conf.title;
   const scores = {};
   let qi = 0;
@@ -262,6 +263,42 @@ function runPersonality(conf) {
       if (!best || pt > scores[best]) best = name;
     const r = conf.results[best] || {};
     showMakerResult(r.emoji || "🐾", best, r.line || "", r.pdf);
+  }
+  ask();
+  show("maker");
+}
+
+/* 유형검사: 군별 합계 → 음수면 neg 글자, 0 이상이면 pos 글자 (검사지 채점 규칙 그대로) */
+function runTypeTest(conf) {
+  $("maker-title").textContent = conf.title;
+  const flat = [];
+  conf.axes.forEach((ax, ai) => ax.questions.forEach(q => flat.push({ ai, q })));
+  const sums = conf.axes.map(() => 0);
+  let qi = 0;
+  function answer(v) {
+    sums[flat[qi].ai] += v;
+    qi++;
+    if (qi < flat.length) ask();
+    else finish();
+  }
+  function ask() {
+    const { q } = flat[qi];
+    const prog = el("div", "maker-progress", `${qi + 1} / ${flat.length}`);
+    const question = el("div", "maker-q", "나는 어느 쪽에 가까울까?");
+    const choices = el("div", "maker-choices");
+    choices.appendChild(bigChoice("", q.l, "", () => answer(-1)));
+    choices.appendChild(bigChoice("", q.r, "", () => answer(+1)));
+    const skip = document.createElement("button");
+    skip.className = "skip-btn";
+    skip.textContent = "🤷 둘 다 비슷해요";
+    skip.addEventListener("click", () => { clickBeep(); answer(0); });
+    makerBody(prog, question, choices, skip);
+  }
+  function finish() {
+    const type = conf.axes.map((ax, i) => (sums[i] < 0 ? ax.neg : ax.pos)).join("");
+    const r = conf.results[type] || {};
+    showMakerResult(r.emoji || "🐾", `${type} · ${r.animal || type}`, r.line || "", r.pdf,
+      { img: r.img, why: r.why });
   }
   ask();
   show("maker");
@@ -310,8 +347,8 @@ function runEmotion(conf) {
   show("maker");
 }
 
-/* 결과 화면 → 인쇄 확정 */
-function showMakerResult(emoji, name, line, pdf) {
+/* 결과 화면 → 인쇄 확정 (extra: img 도안 미리보기 · why 이유 설명) */
+function showMakerResult(emoji, name, line, pdf, extra = {}) {
   $("maker-title").textContent = "결과가 나왔어요!";
   const box = el("div", "maker-choices");
   box.appendChild(bigChoice("🖨", "이 도안으로 인쇄하기", "", () => {
@@ -319,12 +356,21 @@ function showMakerResult(emoji, name, line, pdf) {
     else startDosanGrid(); // 결과에 도안이 연결 안 된 경우 폴백
   }));
   box.appendChild(bigChoice("↩", "다른 방법으로 만들기", "", startMaker));
-  makerBody(
-    el("div", "maker-result-emoji", emoji),
-    el("div", "maker-result-name", name),
-    el("div", "maker-result-line", line),
-    box,
-  );
+  const parts = [];
+  if (extra.img) {
+    const img = document.createElement("img");
+    img.className = "maker-result-img";
+    img.src = extra.img;
+    img.alt = name;
+    parts.push(img);
+  } else {
+    parts.push(el("div", "maker-result-emoji", emoji));
+  }
+  parts.push(el("div", "maker-result-name", name));
+  if (line) parts.push(el("div", "maker-result-line", line));
+  if (extra.why) parts.push(el("div", "maker-result-why", "💡 " + extra.why));
+  parts.push(box);
+  makerBody(...parts);
 }
 
 /* 폴백 — 전체 도안 목록에서 직접 선택 */

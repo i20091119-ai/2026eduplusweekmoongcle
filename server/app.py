@@ -45,8 +45,11 @@ def load_codes() -> set[str]:
         return set()
 
 
+DOSAN_EXTS = {".pdf", ".png"}  # PNG 도안은 인쇄 시 B5 페이지로 자동 조판
+
+
 def list_dosan() -> list[dict]:
-    """content/dosan/**/*.pdf — 파일명 = 화면 버튼 라벨, 하위 폴더 = 분류."""
+    """content/dosan/**/*.{pdf,png} — 파일명 = 결과 라벨, 하위 폴더 = 분류."""
     d = config.CONTENT_DIR / "dosan"
     if not d.exists():
         return []
@@ -56,7 +59,8 @@ def list_dosan() -> list[dict]:
             "label": p.stem,
             "category": p.parent.name if p.parent != d else "",
         }
-        for p in sorted(d.rglob("*.pdf"))
+        for p in sorted(d.rglob("*"))
+        if p.is_file() and p.suffix.lower() in DOSAN_EXTS
     ]
 
 
@@ -67,7 +71,7 @@ def resolve_dosan(rel: str) -> Path | None:
         p = (d / rel).resolve()
     except Exception:
         return None
-    if p.is_file() and p.suffix.lower() == ".pdf" and p.is_relative_to(d):
+    if p.is_file() and p.suffix.lower() in DOSAN_EXTS and p.is_relative_to(d):
         return p
     return None
 
@@ -318,7 +322,9 @@ def index():
 # content 전체를 열지 않는다 — quiz.json(정답 코드)이 노출되지 않도록 필요한 폴더만
 (config.CONTENT_DIR / "intro").mkdir(parents=True, exist_ok=True)
 (config.CONTENT_DIR / "minigame").mkdir(parents=True, exist_ok=True)
+(config.CONTENT_DIR / "dosan").mkdir(parents=True, exist_ok=True)
 app.mount("/content/intro", StaticFiles(directory=config.CONTENT_DIR / "intro"), name="intro")
 app.mount("/content/minigame", StaticFiles(directory=config.CONTENT_DIR / "minigame"), name="minigame")
+app.mount("/content/dosan", StaticFiles(directory=config.CONTENT_DIR / "dosan"), name="dosan")  # 결과 화면 미리보기용
 app.mount("/admin", StaticFiles(directory=config.STATIC_DIR / "admin", html=True), name="admin")
 app.mount("/kiosk", StaticFiles(directory=config.STATIC_DIR / "kiosk", html=True), name="kiosk")

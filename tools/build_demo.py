@@ -48,8 +48,27 @@ intro = [
 dosan = [
     {"file": str(p.relative_to(ROOT / "content/dosan")), "label": p.stem,
      "category": p.parent.name}
-    for p in sorted((ROOT / "content/dosan").rglob("*.pdf"))
+    for p in sorted((ROOT / "content/dosan").rglob("*"))
+    if p.is_file() and p.suffix.lower() in {".pdf", ".png"}
 ]
+
+# 성격검사 결과 이미지(/content/dosan/...)를 단일 파일 데모용 data URI로 인라인
+def _thumb_data_uri(p: Path, size=420, q=80) -> str:
+    import base64 as _b64
+    from PIL import Image
+    im = Image.open(p).convert("RGB")
+    im.thumbnail((size, size))
+    b = io.BytesIO()
+    im.save(b, "JPEG", quality=q)
+    return "data:image/jpeg;base64," + _b64.b64encode(b.getvalue()).decode()
+
+import io
+for r in maker.get("personality", {}).get("results", {}).values():
+    img = r.get("img", "")
+    if img.startswith("/content/dosan/"):
+        f = ROOT / "content" / "dosan" / img.removeprefix("/content/dosan/")
+        if f.exists():
+            r["img"] = _thumb_data_uri(f)
 games, game_src = [], {}
 for sub in sorted((ROOT / "content/minigame").iterdir()):
     # 서버(list_minigames)와 동일한 관용 규칙: game.json + index.html 둘 다 있어야 게임
