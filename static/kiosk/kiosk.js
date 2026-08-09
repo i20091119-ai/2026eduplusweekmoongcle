@@ -403,7 +403,8 @@ function runWorldcup(conf) {
     if (mi >= round.length) {
       if (next.length === 1) {
         const w = next[0];
-        return showMakerResult(w.emoji, w.name, tasteComment(), w.pdf, { why: w.why });
+        return showMakerResult(w.emoji, w.name, tasteComment(), w.pdf,
+          { why: w.why, img: w.img || (w.pdf ? "/content/dosan/" + w.pdf : "") });
       }
       round = next; next = []; mi = 0;
     }

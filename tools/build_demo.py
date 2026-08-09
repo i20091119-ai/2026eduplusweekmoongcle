@@ -79,6 +79,11 @@ for r in maker.get("personality", {}).get("results", {}).values():
         f = ROOT / "content" / "dosan" / img.removeprefix("/content/dosan/")
         if f.exists():
             r["img"] = _thumb_data_uri(f)
+# 월드컵 우승 화면의 도안 미리보기도 인라인 (kiosk는 w.img 우선 사용)
+for c in maker.get("worldcup", {}).get("candidates", []):
+    f = ROOT / "content" / "dosan" / c.get("pdf", "")
+    if c.get("pdf") and f.exists():
+        c["img"] = _thumb_data_uri(f)
 def _alpha_thumb_uri(p, size=480):
     """투명 배경 유지 축소 인라인 (WebP) — 데모 파일 크기 억제."""
     import io as _io
