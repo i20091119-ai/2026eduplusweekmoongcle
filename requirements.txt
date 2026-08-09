@@ -1,5 +1,7 @@
+# 순수 파이썬 위주 구성 — 새 파이썬 버전(3.13/3.14)에서도 빌드 없이 설치되게
 fastapi>=0.110
-uvicorn[standard]>=0.29
+uvicorn>=0.29
+websockets>=12
 pypdf>=4.0
 reportlab>=4.0
 tzdata>=2024.1 ; sys_platform == "win32"
