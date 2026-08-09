@@ -70,7 +70,10 @@ def print_pdf(path: Path) -> tuple[bool, str | None]:
     except FileNotFoundError as e:
         err = f"인쇄 명령을 찾을 수 없음: {e}"
     except subprocess.CalledProcessError as e:
-        err = f"인쇄 실패: {e.stderr.decode(errors='replace')[:200]}"
+        detail = e.stderr.decode(errors="replace")[:200].strip()
+        if not detail and platform.system() == "Windows":
+            detail = "기본 프린터가 없거나 오프라인일 가능성 — 프린터 연결·기본 프린터 지정 확인"
+        err = f"인쇄 실패 (종료코드 {e.returncode}): {detail}"
     except subprocess.TimeoutExpired:
         err = "인쇄 명령 시간 초과"
     last_error = err
