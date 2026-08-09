@@ -217,6 +217,7 @@ async function startMaker() {
   const programs = [
     ["personality", () => runPersonality(makerConf.personality)],
     ["worldcup",    () => runWorldcup(makerConf.worldcup)],
+    ["balance",     () => runBalance(makerConf.balance)],
     ["emotion",     () => runEmotion(makerConf.emotion)],
   ];
   let any = false;
@@ -348,7 +349,37 @@ function runWorldcup(conf) {
   show("maker");
 }
 
-/* 프로그램 3 — 감정 이모티콘 */
+/* 프로그램 3 — 밸런스 게임 (16문항 → 성향 축 3개 → 결과 8종) */
+function runBalance(conf) {
+  $("maker-title").textContent = conf.title;
+  const sums = conf.axes.map(() => 0);
+  let qi = 0;
+  function answer(v) {
+    sums[conf.questions[qi].axis] += v;
+    qi++;
+    if (qi < conf.questions.length) ask();
+    else finish();
+  }
+  function ask() {
+    const q = conf.questions[qi];
+    const prog = el("div", "maker-progress", `${qi + 1} / ${conf.questions.length}`);
+    const question = el("div", "maker-q", conf.prompt || "둘 중 하나만 고를 수 있다면?");
+    const choices = el("div", "maker-choices");
+    choices.appendChild(bigChoice("", q.a, "", () => answer(+1)));
+    choices.appendChild(el("span", "vs-badge", "VS"));
+    choices.appendChild(bigChoice("", q.b, "", () => answer(-1)));
+    makerBody(prog, question, choices);
+  }
+  function finish() {
+    const type = conf.axes.map((ax, i) => (sums[i] >= 0 ? ax.p : ax.n)).join("");
+    const r = conf.results[type] || {};
+    showMakerResult(r.emoji || "🌙", r.name || type, r.line || "", r.pdf, { why: r.why, img: r.img });
+  }
+  ask();
+  show("maker");
+}
+
+/* 프로그램 4 — 감정 이모티콘 (balance로 대체됨 · emotion.json을 되살리면 다시 노출) */
 function runEmotion(conf) {
   $("maker-title").textContent = conf.title;
   const question = el("div", "maker-q", conf.prompt || "지금 내 기분은?");

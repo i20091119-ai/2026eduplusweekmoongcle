@@ -77,16 +77,16 @@ def resolve_dosan(rel: str) -> Path | None:
 
 
 def load_maker() -> dict:
-    """content/maker/*.json — 도안 만들기 프로그램 3종 설정."""
+    """content/maker/*.json — 도안 만들기 프로그램 설정 (파일 추가·삭제로 프로그램 구성)."""
     d = config.CONTENT_DIR / "maker"
     out = {}
-    for name in ("personality", "worldcup", "emotion"):
-        f = d / f"{name}.json"
-        if f.exists():
-            try:
-                out[name] = json.loads(f.read_text(encoding="utf-8"))
-            except Exception as e:
-                log.error("%s.json 파싱 실패: %s", name, e)
+    if not d.exists():
+        return out
+    for f in sorted(d.glob("*.json")):
+        try:
+            out[f.stem] = json.loads(f.read_text(encoding="utf-8"))
+        except Exception as e:
+            log.error("%s 파싱 실패: %s", f.name, e)
     return out
 
 
