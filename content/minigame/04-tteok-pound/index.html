@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>쿵덕쿵덕 떡메치기</title>
+<style>
+/* 타이밍 게임 — 게이지가 왕복, 노란 구간에서 화면 아무 데나 클릭 (트랙볼 조준 불필요) */
+* { margin:0; padding:0; box-sizing:border-box; font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; user-select:none; }
+html,body { width:100%; height:100%; overflow:hidden; }
+body { background:#ACD6E8; display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+header { display:flex; gap:34px; padding:12px; font-size:24px; font-weight:800; color:#7E212F; }
+#scene { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; }
+#rabbit { font-size:120px; line-height:1; transition:transform .08s; }
+#rabbit.pound { transform:translateY(26px) rotate(-8deg); }
+#mortar { font-size:80px; line-height:1; margin-top:-30px; }
+#feedback { font-size:40px; font-weight:900; min-height:1.3em; color:#7E212F; }
+#feedback.perfect { color:#1fae8e; animation:pop .4s; }
+#feedback.miss { color:#c0392b; }
+@keyframes pop { 0%{transform:scale(.6)} 60%{transform:scale(1.25)} 100%{transform:scale(1)} }
+#gauge { position:relative; width:640px; height:44px; background:#FFF9EF; border-radius:22px;
+  box-shadow:inset 0 3px 8px rgba(0,0,0,.15); overflow:hidden; }
+#zone-good { position:absolute; top:0; height:100%; background:#f7dfa0; }
+#zone-perfect { position:absolute; top:0; height:100%; background:#F2C744; }
+#marker { position:absolute; top:-4px; width:12px; height:52px; background:#7E212F; border-radius:6px; }
+#help { font-size:20px; font-weight:700; color:#35505f; }
+body.shake { animation:shake .18s; }
+@keyframes shake { 25%{transform:translate(4px,3px)} 75%{transform:translate(-4px,-3px)} }
+#overlay { position:fixed; inset:0; background:rgba(43,30,25,.65); display:flex;
+  align-items:center; justify-content:center; flex-direction:column; gap:18px; color:#fff; }
+#overlay.hide { display:none; }
+#overlay h1 { font-size:50px; color:#F2C744; }
+#overlay button { font-size:30px; font-weight:800; padding:18px 44px; border:none;
+  border-radius:16px; background:#7E212F; color:#F2C744; cursor:pointer; }
+</style>
+</head>
+<body>
+<header><span>🔨 쿵덕쿵덕 떡메치기</span><span id="round">1 / 15방</span><span id="score">쫀득 0점</span></header>
+<div id="scene">
+  <div id="rabbit">🐰</div>
+  <div id="mortar">🥣</div>
+  <div id="feedback"></div>
+  <div id="gauge"><div id="zone-good"></div><div id="zone-perfect"></div><div id="marker"></div></div>
+  <div id="help">막대가 <b>노란 구간</b>에 왔을 때 화면 아무 데나 클릭! (조준 필요 없음)</div>
+</div>
+<div id="overlay"><h1 id="ov-title">🔨 쿵덕쿵덕 떡메치기</h1><p id="ov-sub" style="font-size:25px">달토끼와 함께 떡메를 쳐요!<br>타이밍이 좋을수록 떡이 쫀득해져요</p><button id="btn-start">시작!</button></div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const W = 640, TOTAL = 15;
+let round = 1, score = 0, x = 0, dir = 1, speed = 4.2, playing = false, raf = null, lock = false;
+let goodW = 150, perfW = 56;
+
+function layout(){
+  const g = $("zone-good"), p = $("zone-perfect");
+  g.style.left = (W - goodW) / 2 + "px"; g.style.width = goodW + "px";
+  p.style.left = (W - perfW) / 2 + "px"; p.style.width = perfW + "px";
+}
+function start(e){
+  e && e.stopPropagation();
+  $("overlay").classList.add("hide");
+  round = 1; score = 0; speed = 4.2; goodW = 150; perfW = 56;
+  x = 0; dir = 1; playing = true; lock = false;
+  hud(); layout();
+  cancelAnimationFrame(raf);
+  loop();
+}
+function hud(){
+  $("round").textContent = `${Math.min(round, TOTAL)} / ${TOTAL}방`;
+  $("score").textContent = `쫀득 ${score}점`;
+}
+function loop(){
+  if (!playing) return;
+  x += dir * speed;
+  if (x <= 0){ x = 0; dir = 1; }
+  if (x >= W - 12){ x = W - 12; dir = -1; }
+  $("marker").style.left = x + "px";
+  raf = requestAnimationFrame(loop);
+}
+document.body.addEventListener("click", () => {
+  if (!playing || lock) return;
+  lock = true;
+  const center = W / 2, mx = x + 6;
+  const d = Math.abs(mx - center);
+  const fb = $("feedback");
+  $("rabbit").classList.add("pound");
+  document.body.classList.add("shake");
+  setTimeout(() => { $("rabbit").classList.remove("pound"); document.body.classList.remove("shake"); }, 180);
+  if (d <= perfW / 2){ score += 2; fb.textContent = "쿵덕!! 완벽 +2"; fb.className = "perfect"; $("mortar").textContent = "🥣✨"; }
+  else if (d <= goodW / 2){ score += 1; fb.textContent = "쿵! 좋아 +1"; fb.className = ""; $("mortar").textContent = "🥣"; }
+  else { fb.textContent = "철푸덕… 빗나감"; fb.className = "miss"; $("mortar").textContent = "🥣💦"; }
+  hud();
+  round++;
+  // 갈수록 빨라지고 구간이 좁아진다
+  speed += 0.55;
+  goodW = Math.max(90, goodW - 5);
+  perfW = Math.max(30, perfW - 2);
+  layout();
+  if (round > TOTAL){
+    playing = false;
+    cancelAnimationFrame(raf);
+    setTimeout(finale, 700);
+  } else {
+    setTimeout(() => { lock = false; }, 250);
+  }
+});
+function finale(){
+  const max = TOTAL * 2;
+  const grade = score >= 26 ? "💎 전설의 떡 장인!" : score >= 20 ? "🥇 쫀득 장인"
+    : score >= 12 ? "🥈 말랑 견습생" : "🥉 떡이 좀 질겼어요";
+  $("ov-title").textContent = grade;
+  $("ov-sub").textContent = `쫀득 점수 ${score} / ${max}점`;
+  $("btn-start").textContent = "다시 하기";
+  $("overlay").classList.remove("hide");
+}
+$("btn-start").addEventListener("click", start);
+</script>
+</body>
+</html>
