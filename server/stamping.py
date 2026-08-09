@@ -103,73 +103,133 @@ def _wrap(c: canvas.Canvas, text: str, size: float, max_w: float) -> list[str]:
     return lines
 
 
+MOON = "#F2C744"
+CREAM_PAGE = "#FFFDF6"
+BAND = "#F9EFD7"
+
+
 def _png_to_pdf(src: Path, meta: dict | None = None) -> bytes:
-    """PNG 도안을 '결과지' 페이지로 조판 — 떡집 헤더 + 결과 제목·키워드 +
-    도안 프레임 + 설명·색칠 가이드. 하단 30mm는 스탬프 영역으로 비움."""
+    """PNG 도안을 '결과지' 페이지로 조판 — 크림 배경 + 이중 장식 테두리 +
+    헤더·제목·키워드 필 + 도안 프레임 + 설명 상자 + 하단 스탬프 밴드."""
     meta = meta or {}
     title = _clean(meta.get("title") or src.stem)
     line = _clean(meta.get("line") or "")
     note = _clean(meta.get("note") or "")
     w, h = B5
     brand = HexColor(config.BRAND_COLOR)
+    moon = HexColor(MOON)
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=B5)
 
-    # ── 헤더: 로고 + 떡집 이름 ──
-    top = h - 11 * mm
+    # ── 페이지 배경 + 이중 장식 테두리 ──
+    c.setFillColor(HexColor(CREAM_PAGE))
+    c.rect(0, 0, w, h, stroke=0, fill=1)
+    c.setStrokeColor(brand)
+    c.setLineWidth(1.6)
+    c.roundRect(5.5 * mm, 5 * mm, w - 11 * mm, h - 10 * mm, 5 * mm, stroke=1, fill=0)
+    c.setStrokeColor(moon)
+    c.setLineWidth(1.0)
+    c.setDash(2.4, 3.2)
+    c.roundRect(7.3 * mm, 6.8 * mm, w - 14.6 * mm, h - 13.6 * mm, 4 * mm, stroke=1, fill=0)
+    c.setDash()
+    # 네 모서리 달 점 장식
+    for cx in (10.5 * mm, w - 10.5 * mm):
+        for cy in (10 * mm, h - 10 * mm):
+            c.setFillColor(moon)
+            c.circle(cx, cy, 1.8 * mm, stroke=0, fill=1)
+            c.setFillColor(brand)
+            c.circle(cx, cy, 0.7 * mm, stroke=0, fill=1)
+
+    # ── 하단 스탬프 밴드 (번호 블록·QR이 이 위에 찍힘) ──
+    c.setFillColor(HexColor(BAND))
+    c.roundRect(9 * mm, 6.5 * mm, w - 18 * mm, 23 * mm, 3.5 * mm, stroke=0, fill=1)
+    c.setFillColor(HexColor("#b49b78"))
+    c.setFont(_FONT, 7)
+    c.drawCentredString(w / 2, 25.6 * mm, "뭉클 떡집 · 제17회 에듀플러스위크 미래교육박람회")
+
+    # ── 헤더: 로고 + 부제 ──
+    top = h - 13 * mm
     if _LOGO.exists():
-        # 로고가 글자 포함 풀 락업이므로 단독 사용 (별도 상호 텍스트 없음)
-        lw_, lh_ = 60 * mm, 20 * mm
+        lw_, lh_ = 64 * mm, 21 * mm
         c.drawImage(str(_LOGO), w / 2 - lw_ / 2, top - lh_, lw_, lh_,
                     preserveAspectRatio=True, anchor="c", mask="auto")
-        top -= lh_ + 2.5 * mm
+        top -= lh_ + 3 * mm
     c.setFillColor(HexColor("#8a7666"))
     c.setFont(_FONT, 8.5)
-    c.drawCentredString(w / 2, top, "나만의 클리커 도안 · 에듀플러스위크 2026")
-    top -= 9 * mm
+    sub = "나만의 클리커 도안 · 에듀플러스위크 2026"
+    c.drawCentredString(w / 2, top, sub)
+    # 부제 양옆 작은 점 장식
+    sw = c.stringWidth(sub, _FONT, 8.5)
+    for dx in (-sw / 2 - 5 * mm, sw / 2 + 5 * mm):
+        c.setFillColor(moon)
+        c.circle(w / 2 + dx, top + 1.1 * mm, 1.1 * mm, stroke=0, fill=1)
+    top -= 10 * mm
 
-    # ── 결과 제목 + 키워드 ──
-    c.setFillColor(black)
+    # ── 결과 제목 + 키워드 필 ──
+    c.setFillColor(HexColor("#2b2320"))
     c.setFont(_FONT_BOLD, 24)
     c.drawCentredString(w / 2, top, title)
-    top -= 8 * mm
+    top -= 9.5 * mm
     if line:
+        c.setFont(_FONT, 10.5)
+        pw = c.stringWidth(line, _FONT, 10.5) + 12 * mm
+        c.setFillColor(moon)
+        c.roundRect(w / 2 - pw / 2, top - 2.6 * mm, pw, 7.6 * mm, 3.8 * mm, stroke=0, fill=1)
         c.setFillColor(brand)
-        c.setFont(_FONT, 11)
-        c.drawCentredString(w / 2, top, line)
-        top -= 6 * mm
+        c.drawCentredString(w / 2, top - 0.2 * mm, line)
+        top -= 8 * mm
 
-    # ── 하단 설명 상자 (스탬프 영역 위) ──
-    note_top = 33 * mm
+    # ── 설명 상자 (라벨 칩 + 본문 + 색칠 가이드) ──
+    note_top = 34 * mm
     if note:
         c.setFont(_FONT, 10)
-        note_lines = _wrap(c, note, 10, w - 40 * mm)[:4]
-        box_h = 7 * mm + len(note_lines) * 5 * mm + 6 * mm
-        c.setFillColor(HexColor("#FBF6EC"))
-        c.setStrokeColor(HexColor("#E3D5C0"))
-        c.roundRect(14 * mm, note_top, w - 28 * mm, box_h, 3 * mm, stroke=1, fill=1)
+        note_lines = _wrap(c, note, 10, w - 44 * mm)[:4]
+        box_h = 8 * mm + len(note_lines) * 5 * mm + 6.5 * mm
+        c.setFillColor(HexColor("#FBF4E4"))
+        c.setStrokeColor(HexColor("#E3CFA8"))
+        c.setLineWidth(0.9)
+        c.roundRect(15 * mm, note_top, w - 30 * mm, box_h, 3.5 * mm, stroke=1, fill=1)
+        # 라벨 칩 — 상자 위 테두리에 걸치게
+        label = "이 도안이 어울리는 이유"
+        c.setFont(_FONT, 8)
+        lw2 = c.stringWidth(label, _FONT, 8) + 8 * mm
+        c.setFillColor(brand)
+        c.roundRect(w / 2 - lw2 / 2, note_top + box_h - 2.6 * mm, lw2, 5.6 * mm, 2.8 * mm, stroke=0, fill=1)
+        c.setFillColor(white)
+        c.drawCentredString(w / 2, note_top + box_h - 1 * mm, label)
         c.setFillColor(HexColor("#4a3a30"))
-        y = note_top + box_h - 7 * mm
+        c.setFont(_FONT, 10)
+        y = note_top + box_h - 8.5 * mm
         for ln in note_lines:
             c.drawCentredString(w / 2, y, ln)
             y -= 5 * mm
         c.setFillColor(HexColor("#a08a70"))
         c.setFont(_FONT, 7.5)
-        c.drawCentredString(w / 2, note_top + 2.5 * mm, COLOR_GUIDE)
-        note_top += box_h + 4 * mm
+        c.drawCentredString(w / 2, note_top + 2.6 * mm, COLOR_GUIDE)
+        note_top += box_h + 6 * mm
     else:
         c.setFillColor(HexColor("#a08a70"))
         c.setFont(_FONT, 8)
         c.drawCentredString(w / 2, note_top, COLOR_GUIDE)
         note_top += 8 * mm
 
-    # ── 도안 프레임 + 이미지 ──
-    frame_x, frame_y = 13 * mm, note_top
-    frame_w, frame_h = w - 26 * mm, (top - 5 * mm) - frame_y
+    # ── 도안 프레임: 버건디 외곽 + 금색 점선 내곽 + 모서리 달 점 ──
+    frame_x, frame_y = 14 * mm, note_top
+    frame_w, frame_h = w - 28 * mm, (top - 6 * mm) - frame_y
     c.setStrokeColor(brand)
-    c.setLineWidth(1.4)
+    c.setLineWidth(1.5)
     c.roundRect(frame_x, frame_y, frame_w, frame_h, 5 * mm, stroke=1, fill=0)
-    inset = 4 * mm
+    c.setStrokeColor(HexColor("#E0B84E"))
+    c.setLineWidth(0.9)
+    c.setDash(2.2, 2.8)
+    c.roundRect(frame_x + 2 * mm, frame_y + 2 * mm, frame_w - 4 * mm, frame_h - 4 * mm,
+                3.6 * mm, stroke=1, fill=0)
+    c.setDash()
+    for cx in (frame_x, frame_x + frame_w):
+        for cy in (frame_y, frame_y + frame_h):
+            c.setFillColor(moon)
+            c.circle(cx, cy, 1.6 * mm, stroke=0, fill=1)
+    inset = 5 * mm
     c.drawImage(
         str(src), frame_x + inset, frame_y + inset,
         frame_w - inset * 2, frame_h - inset * 2,

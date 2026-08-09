@@ -70,12 +70,20 @@ function applyUiSlots() {
     $("code-rabbit").textContent = "";
     $("code-rabbit").appendChild(im);
   });
-  // 부저 화면 호출 버튼: 종 이미지 슬롯
+  // 종 이미지 슬롯 — 부저 화면 호출 버튼 + 띵동 호출 화면 공용
   slotImg("/content/ui/부저_종.png", im => {
     im.style.height = "150px";
     const b = $("btn-buzzer");
     b.innerHTML = "호출<br>";
     b.appendChild(im);
+    const bell = document.querySelector("#screen-called .bell");
+    if (bell) {
+      const im2 = im.cloneNode();
+      im2.style.height = "170px";
+      im2.classList.add("bell-img");
+      bell.textContent = "";
+      bell.appendChild(im2);
+    }
   });
 }
 let current = "attract";

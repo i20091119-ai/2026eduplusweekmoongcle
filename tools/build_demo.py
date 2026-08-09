@@ -231,30 +231,49 @@ function demoPrint() {{
   d.open();
   d.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
     @page {{ size: 182mm 257mm; margin: 0; }}
+    * {{ box-sizing: border-box; }}
     body {{ margin:0; width:182mm; height:257mm; font-family:"esamanru","Pretendard","Malgun Gothic",sans-serif;
+      background:#FFFDF6; -webkit-print-color-adjust:exact; print-color-adjust:exact; }}
+    .page {{ position:absolute; inset:5mm 5.5mm; border:1.6pt solid #7E212F; border-radius:5mm;
       display:flex; flex-direction:column; align-items:center; text-align:center; }}
-    .logo {{ height:26mm; margin-top:8mm; }}
-    .sub {{ color:#8a7666; font-size:8.5pt; margin:2mm 0 3mm; }}
-    h1 {{ font-size:23pt; margin:0 0 2mm; color:#111; }}
-    .line {{ color:#7E212F; font-size:11pt; font-weight:700; margin-bottom:4mm; }}
-    .frame {{ width:150mm; height:118mm; border:1.5pt solid #7E212F; border-radius:5mm;
+    .page::before {{ content:""; position:absolute; inset:1.4mm; border:1pt dashed #E0B84E; border-radius:4mm; }}
+    .dot {{ position:absolute; width:3.6mm; height:3.6mm; background:#F2C744; border-radius:50%; }}
+    .dot::after {{ content:""; position:absolute; inset:1.1mm; background:#7E212F; border-radius:50%; }}
+    .logo {{ height:22mm; margin-top:7mm; }}
+    .sub {{ color:#8a7666; font-size:8.5pt; margin:2.5mm 0 3mm; }}
+    .sub b {{ color:#F2C744; }}
+    h1 {{ font-size:23pt; margin:0 0 3mm; color:#2b2320; }}
+    .line {{ display:inline-block; background:#F2C744; color:#7E212F; font-size:10.5pt; font-weight:700;
+      border-radius:99px; padding:1.6mm 6mm; margin-bottom:4mm; }}
+    .frame {{ position:relative; width:150mm; height:112mm; border:1.5pt solid #7E212F; border-radius:5mm;
       display:flex; align-items:center; justify-content:center; }}
-    .frame img {{ max-width:140mm; max-height:110mm; }}
-    .note {{ width:150mm; background:#FBF6EC; border:1px solid #E3D5C0; border-radius:3mm;
-      font-size:10pt; color:#4a3a30; padding:4mm 6mm; margin-top:5mm; line-height:1.6; }}
-    .stamp {{ display:flex; width:150mm; justify-content:space-between; align-items:center; margin-top:auto; margin-bottom:7mm; }}
-    .num {{ background:#7E212F; color:#fff; font-size:17pt; font-weight:800; border-radius:3mm; padding:4mm 12mm; }}
+    .frame::before {{ content:""; position:absolute; inset:2mm; border:1pt dashed #E0B84E; border-radius:3.6mm; }}
+    .frame img {{ max-width:138mm; max-height:100mm; }}
+    .notewrap {{ position:relative; width:150mm; margin-top:6mm; }}
+    .chip {{ position:absolute; top:-3mm; left:50%; transform:translateX(-50%); background:#7E212F; color:#fff;
+      font-size:8pt; border-radius:99px; padding:1mm 4.5mm; white-space:nowrap; }}
+    .note {{ background:#FBF4E4; border:1px solid #E3CFA8; border-radius:3.5mm;
+      font-size:10pt; color:#4a3a30; padding:5mm 7mm 3mm; line-height:1.65; }}
+    .guide {{ font-size:7.5pt; color:#a08a70; margin-top:2mm; }}
+    .band {{ margin-top:auto; margin-bottom:2mm; width:158mm; background:#F9EFD7; border-radius:3.5mm;
+      display:flex; justify-content:space-between; align-items:center; padding:3mm 5mm; }}
+    .num {{ background:#7E212F; color:#fff; font-size:16pt; font-weight:800; border-radius:3mm; padding:3mm 11mm; }}
+    .foot {{ font-size:7pt; color:#b49b78; }}
     .qr {{ font-size:8pt; color:#555; }}
-  </style></head><body>
+  </style></head><body><div class="page">
+    <span class="dot" style="left:2mm;top:2mm"></span><span class="dot" style="right:2mm;top:2mm"></span>
+    <span class="dot" style="left:2mm;bottom:2mm"></span><span class="dot" style="right:2mm;bottom:2mm"></span>
     ${{logo ? `<img class="logo" src="${{logo.src}}">` : ""}}
-    <div class="sub">나만의 클리커 도안 · 에듀플러스위크 2026 (데모 인쇄)</div>
+    <div class="sub"><b>●</b>&nbsp; 나만의 클리커 도안 · 에듀플러스위크 2026 (데모 인쇄) &nbsp;<b>●</b></div>
     <h1>${{meta.title || ""}}</h1>
-    <div class="line">${{meta.line || ""}}</div>
+    ${{meta.line ? `<div class="line">${{meta.line}}</div>` : ""}}
     <div class="frame">${{img ? `<img src="${{img}}">` : "<span style='color:#bbb'>도안 미리보기 없음</span>"}}</div>
-    ${{meta.note ? `<div class="note">${{meta.note}}</div>` : ""}}
-    <div class="stamp"><span class="num">No. ${{String(DEMO.number).padStart(3, "0")}}</span>
+    ${{meta.note ? `<div class="notewrap"><span class="chip">이 도안이 어울리는 이유</span>
+      <div class="note">${{meta.note}}<div class="guide">색칠 순서: 밝은 면, 어두운 면, 검정 외곽선, 흰색 하이라이트 (아크릴마카 3색 이내)</div></div></div>` : ""}}
+    <div class="band"><span class="num">No. ${{String(DEMO.number).padStart(3, "0")}}</span>
+      <span class="foot">뭉클 떡집 · 제17회 에듀플러스위크 미래교육박람회</span>
       <span class="qr">뭉클 더 알아보기</span></div>
-  </body></html>`);
+  </div></body></html>`);
   d.close();
   setTimeout(() => {{ try {{ f.contentWindow.focus(); f.contentWindow.print(); }} catch (e) {{}} }}, 350);
 }}
