@@ -178,7 +178,11 @@ class CodeIn(BaseModel):
 
 class CompleteIn(BaseModel):
     station: str
-    dosan: str  # 파일명 (예: 우주비행사.pdf)
+    dosan: str  # dosan 폴더 기준 상대경로 (예: 동물/여우.png)
+    # 결과지 인쇄용 메타 (PNG 도안일 때 페이지에 함께 조판)
+    title: str | None = None   # 결과 이름 (예: "INFP · 토끼")
+    line: str | None = None    # 키워드 한 줄
+    note: str | None = None    # 상세 설명 문단
 
 
 class StationIn(BaseModel):
@@ -249,11 +253,17 @@ async def complete(body: CompleteIn):
     if not queue_db.enqueue(body.station, number, body.dosan):
         raise HTTPException(409, "이 자리는 이미 대기 중입니다")
 
+    meta = {
+        "title": (body.title or "").strip()[:60],
+        "line": (body.line or "").strip()[:80],
+        "note": (body.note or "").strip()[:400],
+    }
+
     # 스탬프 + 인쇄는 스레드에서 (이벤트 루프 비차단) — 결과는 요청별로 격리
     def _stamp_and_print() -> tuple[bool, str | None]:
         out = config.DATA_DIR / "printed" / f"{queue_db.today()}_{number:03d}.pdf"
         try:
-            stamping.stamp_pdf(src, number, out)
+            stamping.stamp_pdf(src, number, out, meta)
         except Exception as e:
             err = f"스탬프 실패: {e}"
             printing.last_error = err

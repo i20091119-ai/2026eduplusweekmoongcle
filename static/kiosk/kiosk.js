@@ -391,12 +391,13 @@ function runEmotion(conf) {
   show("maker");
 }
 
-/* 결과 화면 → 인쇄 확정 (extra: img 도안 미리보기 · why 이유 설명) */
+/* 결과 화면 → 인쇄 확정 (extra: img 도안 미리보기 · why 이유 설명)
+ * 결과 이름·키워드·설명은 결과지(인쇄물)에도 함께 조판된다 */
 function showMakerResult(emoji, name, line, pdf, extra = {}) {
   $("maker-title").textContent = "결과가 나왔어요!";
   const box = el("div", "maker-choices");
   box.appendChild(bigChoice("🖨", "이 도안으로 인쇄하기", "", () => {
-    if (pdf) complete(pdf);
+    if (pdf) complete(pdf, { title: name, line, note: extra.why || "" });
     else startDosanGrid(); // 결과에 도안이 연결 안 된 경우 폴백
   }));
   box.appendChild(bigChoice("↩", "다른 방법으로 만들기", "", startMaker));
@@ -432,7 +433,7 @@ async function startDosanGrid() {
   for (const d of list) {
     const b = document.createElement("button");
     b.textContent = "🎨 " + d.label;
-    b.addEventListener("click", () => { clickBeep(); complete(d.file); });
+    b.addEventListener("click", () => { clickBeep(); complete(d.file, { title: d.label }); });
     grid.appendChild(b);
   }
   makerBody(grid);
@@ -440,13 +441,13 @@ async function startDosanGrid() {
 }
 
 /* ── ⑤ 완료 → 인쇄 → 대기 등록 ── */
-async function complete(dosanFile) {
+async function complete(dosanFile, meta = {}) {
   show("printing");
   try {
     const r = await fetch("/api/complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ station: STATION, dosan: dosanFile }),
+      body: JSON.stringify({ station: STATION, dosan: dosanFile, ...meta }),
     });
     if (!r.ok) {
       const j = await r.json().catch(() => ({}));
